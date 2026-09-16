@@ -1120,8 +1120,20 @@ const restored = loadState();
 log("Dark Nova: Omniverse V0. Six lanes. Mastery ★★★. Salvage crates named.", "info");
 log("Cinder Claim + miner 24/cycle into a claim pile. Tap Claim to bank. Relay Alpha free. No Refit in PvE.", "info");
 if (restored) log("Save loaded. Refresh keeps this run.", "win");
+function catchUpFromStorage() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    const last = raw ? JSON.parse(raw).lastTick : state.lastTick;
+    catchUp(typeof last === "number" ? last : 0);
+    render();
+  } catch (_) {
+    /* ignore */
+  }
+}
 window.addEventListener("pagehide", saveState);
+window.addEventListener("focus", catchUpFromStorage);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") saveState();
+  else catchUpFromStorage();
 });
 render();
