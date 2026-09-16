@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07090f" />
+  <title>Dark Nova: Omniverse — V0</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="dn-mark" aria-hidden="true">DN</div>
+        <div>
+          <h1>Dark Nova: Omniverse</h1>
+          <div class="tag">DN · mission lanes · V0</div>
+        </div>
+      </div>
+      <div class="tag" id="tickLabel">regen 60s</div>
+    </header>
+
+    <section class="panel">
+      <div class="stats">
+        <div class="stat">
+          <div class="k">Energy</div>
+          <div class="v"><span id="energy">100</span>/<span id="energyCap">100</span></div>
+          <div class="bar energy-bar"><span id="energyFill"></span></div>
+        </div>
+        <div class="stat">
+          <div class="k">Creds</div>
+          <div class="v" id="creds">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">Level</div>
+          <div class="v" id="level">1</div>
+        </div>
+        <div class="stat">
+          <div class="k">XP</div>
+          <div class="v"><span id="xp">1</span> / <span id="xpNext">10</span></div>
+          <div class="bar"><span id="xpFill"></span></div>
+        </div>
+      </div>
+      <div class="hint" id="regenHint">+10 energy every 60s</div>
+    </section>
+
+    <section class="panel">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Ship skills</strong>
+        <span class="tag" id="pointsLabel">0 pts</span>
+      </div>
+      <div id="skills"></div>
+    </section>
+
+    <section class="panel">
+      <div class="row" style="margin-bottom:10px">
+        <strong>Missions</strong>
+        <span class="tag">dump Atk to climb free</span>
+      </div>
+      <div id="missions"></div>
+    </section>
+
+    <section class="panel">
+      <strong>Combat log</strong>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+
+  <div class="blackout" id="blackout">
+    <div class="blackout-inner">
+      <div class="dn-mark" aria-hidden="true">DN</div>
+      <span>Wreck detected</span>
+    </div>
+  </div>
+
+  <div class="overlay" id="revengeOverlay">
+    <div class="card revenge">
+      <span class="dn-chip">Dark Nova · Refit</span>
+      <h2>Refit and re-engage</h2>
+      <p id="revengeCopy">Your hull is scrap. Buy a one-shot Revenge Kit for this mission only — or regen and replot free.</p>
+      <p class="free-note">Free path stays open. Kit is one-shot, this mission only — never sticks to loadout.</p>
+      <div class="actions">
+        <button class="cyan" id="buyRevenge">Revenge Kit · $0.99 (sim)</button>
+        <button class="ghost" id="freePath">Regen and replot</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="confirmOverlay">
+    <div class="card revenge">
+      <span class="dn-chip">Dark Nova · Creds</span>
+      <h2>Confirm purchase</h2>
+      <p>+4 Attack for one retry of <strong id="confirmMission"></strong> only. Does not stick to your loadout.</p>
+      <div class="actions">
+        <button class="cyan" id="confirmBuy">Pay $0.99 (simulated)</button>
+        <button class="ghost" id="cancelBuy">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

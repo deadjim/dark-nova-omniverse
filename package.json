@@ -1,0 +1,15 @@
+{
+  "name": "dark-nova-omniverse",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Dark Nova: Omniverse V0 combat-loop playtest",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build && node scripts/stamp-docs.mjs",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}
