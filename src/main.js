@@ -32,7 +32,7 @@ const WORLD_NAMES = ["Ember Rock", "Ash Hold", "Corsair Reach", "Drift Hollow", 
 
 // V0 playtest ladder (sheet L1 planet = 100,000). Labeled in UI + README.
 const ECON = {
-  starterCreds: 4000,
+  starterCreds: 6000,
   planetL1: 2500,
   planetUpgrade: [0, 6000, 14000, 32000],
   planetSlots: [0, 1, 2, 4, 6],

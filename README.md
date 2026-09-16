@@ -45,7 +45,7 @@ Designer DN chrome throughout: **Dark Nova: Omniverse** wordmark, **DN** mark, l
 
 ### Loop 2 economy (clickable skeleton)
 
-Starter **4,000 creds** is a **V0 playtest grant** so the belt is clickable immediately. Free grind still works: mission loot banks toward a first world.
+Starter **6,000 creds** is a **V0 playtest grant** so a world, factory, miner, and dock are all clickable on first load. Free grind still works: mission loot banks toward a first world.
 
 | Asset | How to try it |
 | --- | --- |
