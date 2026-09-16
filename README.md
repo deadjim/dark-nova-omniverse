@@ -4,11 +4,11 @@
 
 ## Playtest
 
-**Live URL:** [https://temporary-quick-boron-jw6rw6w.vercel.app](https://temporary-quick-boron-jw6rw6w.vercel.app)
+**Live URL:** [https://temporary-speedy-mandolin-7h3nq2g.vercel.app](https://temporary-speedy-mandolin-7h3nq2g.vercel.app)
 
-Public Vercel deploy. No login. HTTP 200. Open on a phone or a narrow desktop window.
+Public Vercel static deploy of the current V0 `docs/` build. No login. HTTP 200. Open on a phone or a narrow desktop window.
 
-**Claim this site** (keeps it after 60 minutes): [https://vercel.com/claim-deployment?code=d2326116-88a7-47c2-8470-aeb8a4a7c3bd](https://vercel.com/claim-deployment?code=d2326116-88a7-47c2-8470-aeb8a4a7c3bd)
+**Claim this site** (keeps it after 60 minutes): [https://vercel.com/claim-deployment?code=93bc3e86-9d0e-41d0-9cec-129f02555469](https://vercel.com/claim-deployment?code=93bc3e86-9d0e-41d0-9cec-129f02555469)
 
 ### Access caveats
 
