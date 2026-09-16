@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#07090f" />
   <title>Dark Nova: Omniverse — V0</title>
-  <script type="module" crossorigin src="./assets/index-Blpg_Wi7.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DcjMfe8s.css">
+  <script type="module" crossorigin src="./assets/index-C0kzIl7G.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BXFGL9fZ.css">
 </head>
 <body>
   <div class="app">
@@ -78,10 +78,11 @@
     <div class="card revenge">
       <span class="dn-chip">Dark Nova · Refit</span>
       <h2>Refit and re-engage</h2>
-      <p id="revengeCopy">Your hull is scrap. Buy a one-shot Revenge Kit for this mission only — or regen and replot free.</p>
-      <p class="free-note">Free path stays open. Kit is one-shot, this mission only — never sticks to loadout.</p>
+      <p id="wreckMission" class="free-note" hidden></p>
+      <p id="revengeCopy">Hull’s scrap. One-shot Revenge Kit for <em>this</em> mission only — or regen and replot free.</p>
+      <p class="free-note">One rematch. Doesn’t stick to your loadout.</p>
       <div class="actions">
-        <button class="cyan" id="buyRevenge">Revenge Kit · $0.99 (sim)</button>
+        <button class="cyan" id="buyRevenge">Revenge Kit · $0.99</button>
         <button class="ghost" id="freePath">Regen and replot</button>
       </div>
     </div>
@@ -91,9 +92,10 @@
     <div class="card revenge">
       <span class="dn-chip">Dark Nova · Creds</span>
       <h2>Confirm purchase</h2>
-      <p>+4 Attack for one retry of <strong id="confirmMission"></strong> only. Does not stick to your loadout.</p>
+      <p id="confirmMissionLabel" class="free-note" hidden></p>
+      <p>Spend $0.99 for +4 Atk on this retry only?</p>
       <div class="actions">
-        <button class="cyan" id="confirmBuy">Pay $0.99 (simulated)</button>
+        <button class="cyan" id="confirmBuy">Revenge Kit · $0.99</button>
         <button class="ghost" id="cancelBuy">Cancel</button>
       </div>
     </div>

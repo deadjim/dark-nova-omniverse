@@ -284,6 +284,11 @@ button.danger {
   color: var(--muted);
   margin: -4px 0 10px;
 }
+.card.revenge em {
+  font-style: italic;
+  color: var(--ash);
+  font-weight: 650;
+}
 .blackout .dn-mark {
   width: 48px;
   height: 48px;
