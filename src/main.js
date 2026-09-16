@@ -334,9 +334,9 @@ function salvageCrate(m, margin) {
   if (margin >= 8) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
   const cleanAt = cinder ? 3 : 5;
   if (margin >= cleanAt) {
-    const jackpotChance = cinder ? 0.2 : 0.12;
+    const jackpotChance = cinder ? 0.08 : 0.12;
     if (Math.random() < jackpotChance) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
-    return { name: "Hot Salvage", kind: "clean", lootMult: 1 };
+    return { name: "Hot Salvage", kind: "clean", lootMult: cinder ? 1.2 : 1 };
   }
   return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.85 };
 }
