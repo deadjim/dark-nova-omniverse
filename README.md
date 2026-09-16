@@ -11,7 +11,7 @@ GitHub Pages from `main` → `/docs`.
 ### Access caveats
 
 - Do **not** use Surge (`dark-nova-omniverse.surge.sh` — HTTP 451).
-- No save file. Refresh resets the run.
+- Progress saves in this browser (`localStorage`). Hard refresh keeps the run.
 - PvE has **no Revenge / Refit**. Loss is combat-log only.
 
 ## Run locally

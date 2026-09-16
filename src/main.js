@@ -67,6 +67,7 @@ const MISSIONS = [
   },
 ];
 
+const SAVE_KEY = "dn-omniverse-v1";
 const CYCLE = 12;
 
 const ECON = {
@@ -136,6 +137,82 @@ const state = {
     },
   ],
 };
+
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch (_) {
+    /* quota / private mode — run continues unsaved */
+  }
+}
+
+function mergeSystems(savedSystems) {
+  if (!Array.isArray(savedSystems)) return;
+  const byId = Object.fromEntries(savedSystems.map((s) => [s.id, s]));
+  for (const sys of state.systems) {
+    const s = byId[sys.id];
+    if (!s) continue;
+    sys.owned = !!s.owned;
+    if (!Array.isArray(s.factories)) continue;
+    for (const f of sys.factories) {
+      const sf = s.factories.find((x) => x.id === f.id);
+      if (!sf) continue;
+      if (sf.status) f.status = sf.status;
+      if (sf.idle != null) f.idle = sf.idle;
+      if (sf.pile != null) f.pile = sf.pile;
+    }
+  }
+  for (const s of savedSystems) {
+    if (!state.systems.some((x) => x.id === s.id)) state.systems.push(s);
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object" || typeof saved.creds !== "number") return false;
+    const scalars = [
+      "energy",
+      "energyCap",
+      "creds",
+      "earned",
+      "scrap",
+      "level",
+      "xp",
+      "points",
+      "regenLeft",
+      "cycleLeft",
+      "nextMiner",
+      "minerCap",
+      "outpost",
+      "meridianOpen",
+    ];
+    for (const k of scalars) {
+      if (saved[k] !== undefined) state[k] = saved[k];
+    }
+    if (saved.skills && typeof saved.skills === "object") {
+      state.skills = { ...state.skills, ...saved.skills };
+    }
+    if (saved.mastery && typeof saved.mastery === "object") state.mastery = saved.mastery;
+    if (Array.isArray(saved.miners) && saved.miners.length) state.miners = saved.miners;
+    if (saved.modes && typeof saved.modes === "object") state.modes = { ...state.modes, ...saved.modes };
+    if (saved.replicateLeft && typeof saved.replicateLeft === "object") {
+      state.replicateLeft = { ...state.replicateLeft, ...saved.replicateLeft };
+    }
+    if (saved.minePile && typeof saved.minePile === "object") {
+      state.minePile = { ...state.minePile, ...saved.minePile };
+    }
+    if (saved.pileFull && typeof saved.pileFull === "object") {
+      state.pileFull = { ...state.pileFull, ...saved.pileFull };
+    }
+    mergeSystems(saved.systems);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 function toast(msg, ok) {
   const el = document.getElementById("toast");
@@ -946,6 +1023,7 @@ function render() {
   renderMissions();
   renderSystems();
   renderStations();
+  saveState();
 }
 
 document.querySelectorAll(".tab").forEach((tab) => {
@@ -977,6 +1055,12 @@ setInterval(() => {
   render();
 }, 1000);
 
+const restored = loadState();
 log("Dark Nova: Omniverse V0. Six lanes. Mastery ★★★. Salvage crates named.", "info");
 log("Cinder Claim + miner 24/cycle into a claim pile. Tap Claim to bank. Relay Alpha free. No Refit in PvE.", "info");
+if (restored) log("Save loaded. Refresh keeps this run.", "win");
+window.addEventListener("pagehide", saveState);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveState();
+});
 render();
