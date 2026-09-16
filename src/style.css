@@ -183,21 +183,77 @@ button.block { width: 100%; margin-top: 4px; }
 .mission.ember::before, .mission.sweep::before { background: linear-gradient(180deg, var(--ash), var(--ember)); }
 .mission.ash::before, .mission.slag::before { background: linear-gradient(180deg, #ffd27a, #c47a2a); }
 .mission.glass::before, .mission.corsair::before { background: linear-gradient(180deg, #7af0ff, #3a6cff); }
-.mission-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .mission h3 { margin: 0 0 4px; font-size: 0.95rem; color: var(--cyan); }
-.mission .stars { color: var(--ash); letter-spacing: 0.08em; font-size: 0.85rem; flex-shrink: 0; }
 .mission p { margin: 0 0 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
+.salvage-rule {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0 2px 10px;
+}
+.mastery-under {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.mastery-under .stars {
+  color: var(--ash);
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+}
+.mastery-chip {
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: #081018;
+  background: linear-gradient(180deg, var(--ash), var(--ember));
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+.salvage-flash {
+  position: fixed;
+  left: 50%;
+  top: 28%;
+  transform: translateX(-50%) scale(0.92);
+  z-index: 60;
+  min-width: 200px;
+  text-align: center;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #121826;
+  border: 1px solid rgba(255, 179, 71, 0.45);
+  box-shadow: 0 16px 50px rgba(0,0,0,.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.salvage-flash.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+.salvage-crate {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ash);
+}
+.salvage-creds {
+  margin-top: 0;
+  max-height: 0;
+  overflow: hidden;
+  color: var(--ok);
+  font-weight: 700;
+  transition: max-height .2s, margin .2s;
+}
+.salvage-flash.creds-in .salvage-creds {
+  margin-top: 6px;
+  max-height: 40px;
+}
 .mission .lane {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--muted);
   margin-bottom: 2px;
-}
-.mastery-hint {
-  font-size: 0.7rem;
-  color: var(--ash);
-  margin: -4px 0 10px;
 }
 .chips, .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .chip {

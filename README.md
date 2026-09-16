@@ -43,8 +43,8 @@ Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend**. No Rev
 | Glass Meridian | 16 | 12 | 340 | 12 |
 | Corsair Gate | 20 | 16 | 500 | 18 |
 
-Wins name the crate: scrape → **Scrap Bundle**, clean → **Hot Salvage**, jackpot (margin ≥ 5 or Corsair) → **Jackpot Cache**.  
-Mastery ★★★ per mission (1★ first win, 2★ repeats, 3★ deeper + a jackpot). Small loot/XP% bonuses. Mid-lanes star faster.
+Wins flash the crate, then creds: scrape (margin ≤2) → **Scrap Bundle**, clean (margin ≥5) → **Hot Salvage**, jackpot (margin ≥8 or 12% of cleans) → **Jackpot Cache**.  
+Mastery ★★★ sits under Engage (no modal): ★1 first clear, ★2 clean only, ★3 any 3 clears (scrapes count). Repeat loot: ★2 +10%, ★3 +20%.
 
 ### Economy (Founder locks + Critic PASS)
 
@@ -63,4 +63,4 @@ Mastery ★★★ per mission (1★ first win, 2★ repeats, 3★ deeper + a jac
 | First planet | **Ember Reach = 100,000** (not discounted). Bar = **Earned toward 100k** (lifetime) — scrap spends never shrink it. |
 | Mid unlocks | **2,500 earned** → second miner berth. **12,000 earned** → Ash Drift L0 outpost. |
 
-How to try it: open Missions for all six lanes + ★★★ mastery, win Ember and read the crate name in the log, open Systems, wait a 12s cycle, tap the glowing cred chip (wallet does not tick up on its own — piles never decay), buy scrap and watch **Earned toward 100k** hold, Ignore Slag Line Beta for capped bleed, Service for 8⚡, toggle Replicate (3 cycles, no Advance button), visit Stations for the free relay + scrap + Glass Meridian gate.
+How to try it: open Missions (Ember → Cinder → Ash → Slag → Glass → Corsair), win Ember and watch the crate flash then creds, read ★★★ under Engage, open Systems and tap a claim chip, visit Stations — **Relay online. Claim when you’re ready.**

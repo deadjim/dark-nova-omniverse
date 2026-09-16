@@ -13,7 +13,7 @@ const MISSIONS = [
   {
     id: "sweep",
     name: "Cinder Sweep",
-    blurb: "Ash patrol. Sweep the lane, pocket the glow.",
+    blurb: "Cinder patrol. Sweep the lane, pocket the glow.",
     enemy: { atk: 5, def: 7, luck: 2, spd: 3 },
     energy: 6,
     loot: 100,
@@ -303,36 +303,60 @@ function applyLevelUps() {
 }
 
 function masteryRec(id) {
-  if (!state.mastery[id]) state.mastery[id] = { wins: 0, jackpots: 0 };
+  if (!state.mastery[id]) state.mastery[id] = { wins: 0, cleans: 0 };
   return state.mastery[id];
 }
 
-function starsFor(m) {
+function starSlots(m) {
   const rec = masteryRec(m.id);
-  if (rec.wins < 1) return 0;
-  const twoAt = m.tier === 2 ? 2 : 3;
-  const threeAt = m.tier === 2 ? 5 : 6;
-  if (rec.wins >= threeAt && rec.jackpots >= 1) return 3;
-  if (rec.wins >= twoAt) return 2;
-  return 1;
+  return {
+    s1: rec.wins >= 1,
+    s2: rec.cleans >= 1,
+    s3: rec.wins >= 3,
+  };
+}
+
+function starGlyphs(m) {
+  const s = starSlots(m);
+  return `${s.s1 ? "★" : "☆"}${s.s2 ? "★" : "☆"}${s.s3 ? "★" : "☆"}`;
 }
 
 function masteryBonus(m) {
-  const s = starsFor(m);
-  if (s >= 3) return { loot: 0.12, xp: 0.1 };
-  if (s >= 2) return { loot: 0.08, xp: 0.05 };
-  if (s >= 1) return { loot: 0.05, xp: 0 };
-  return { loot: 0, xp: 0 };
+  const s = starSlots(m);
+  if (s.s3) return 0.2;
+  if (s.s2) return 0.1;
+  return 0;
 }
 
-function salvageCrate(m, margin) {
+function salvageCrate(margin) {
   if (margin <= 2) return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.5 };
-  if (margin >= 5 || m.id === "corsair") return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.25 };
-  return { name: "Hot Salvage", kind: "clean", lootMult: 1 };
+  if (margin >= 8) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
+  if (margin >= 5) {
+    if (Math.random() < 0.12) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
+    return { name: "Hot Salvage", kind: "clean", lootMult: 1 };
+  }
+  return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.85 };
 }
 
-function starGlyphs(n) {
-  return "★★★".split("").map((ch, i) => (i < n ? "★" : "☆")).join("");
+function flashSalvage(crateName, loot) {
+  const el = document.getElementById("salvageFlash");
+  const crate = document.getElementById("salvageCrate");
+  const creds = document.getElementById("salvageCreds");
+  crate.textContent = crateName;
+  creds.textContent = "";
+  el.hidden = false;
+  el.classList.add("show");
+  el.classList.remove("creds-in");
+  clearTimeout(flashSalvage._t1);
+  clearTimeout(flashSalvage._t2);
+  flashSalvage._t1 = setTimeout(() => {
+    creds.textContent = `+${loot.toLocaleString()} creds`;
+    el.classList.add("creds-in");
+  }, 520);
+  flashSalvage._t2 = setTimeout(() => {
+    el.classList.remove("show", "creds-in");
+    el.hidden = true;
+  }, 1700);
 }
 
 function runMission(m) {
@@ -350,20 +374,19 @@ function runMission(m) {
     "info"
   );
   if (p.score >= enemyDef) {
-    const crate = salvageCrate(m, margin);
+    const crate = salvageCrate(margin);
     const rec = masteryRec(m.id);
     const bonus = masteryBonus(m);
-    let loot = Math.floor(m.loot * crate.lootMult * (1 + bonus.loot));
-    let xpGain = Math.max(1, Math.floor(m.xp * (1 + bonus.xp)));
+    const loot = Math.floor(m.loot * crate.lootMult * (1 + bonus));
     rec.wins += 1;
-    if (crate.kind === "jackpot") rec.jackpots += 1;
-    const stars = starsFor(m);
+    if (crate.kind === "clean" || crate.kind === "jackpot") rec.cleans += 1;
+    const stars = starGlyphs(m);
     gainCreds(loot);
-    state.xp += xpGain;
+    state.xp += m.xp;
     applyLevelUps();
     const result = crate.kind === "scrape" ? "Scrape" : crate.kind === "jackpot" ? "Jackpot" : "Clean";
-    log(`${result} · ${crate.name} (margin ${margin}). +${loot} creds, +${xpGain} XP. Mastery ${starGlyphs(stars)}`, "win");
-    toast(`${crate.name} · ${starGlyphs(stars)}`, true);
+    log(`${crate.name}. Then +${loot} creds, +${m.xp} XP. ${result} (margin ${margin}). Mastery ${stars}`, "win");
+    flashSalvage(crate.name, loot);
   } else {
     const xpGain = Math.floor(m.xp / 2);
     state.xp += xpGain;
@@ -599,22 +622,20 @@ function renderSkills() {
 function renderMissions() {
   const root = document.getElementById("missions");
   root.innerHTML = "";
+  const rule = document.createElement("p");
+  rule.className = "salvage-rule";
+  rule.textContent = "Scrape (margin ≤2) → Scrap Bundle. Clean (margin ≥5) → Hot Salvage. Jackpot Cache = margin ≥8 or 12% of cleans — rarer than clean.";
+  root.appendChild(rule);
   for (const m of MISSIONS) {
     const card = document.createElement("div");
     card.className = "mission " + m.id;
     const e = m.enemy;
-    const stars = starsFor(m);
+    const slots = starSlots(m);
+    const stars = starGlyphs(m);
     const bonus = masteryBonus(m);
-    const rec = masteryRec(m.id);
-    const bonusHint = stars
-      ? ` · +${Math.round(bonus.loot * 100)}% loot${bonus.xp ? ` / +${Math.round(bonus.xp * 100)}% XP` : ""}`
-      : rec.wins ? "" : " · first win = 1★";
     card.innerHTML = `
       <div class="lane">${m.lane} · T${m.tier} · DN</div>
-      <div class="mission-title">
-        <h3>${m.name}</h3>
-        <span class="stars" aria-label="${stars} of 3 stars">${starGlyphs(stars)}</span>
-      </div>
+      <h3>${m.name}</h3>
       <p>${m.blurb}</p>
       <div class="chips">
         <span class="chip">Energy <strong>${m.energy}</strong></span>
@@ -622,13 +643,27 @@ function renderMissions() {
         <span class="chip">XP <strong>${m.xp}</strong></span>
         <span class="chip">Enemy Def <strong>${e.def}</strong></span>
       </div>
-      <div class="mastery-hint">Mastery ${starGlyphs(stars)} · ${rec.wins} win${rec.wins === 1 ? "" : "s"}${bonusHint}</div>
     `;
     const btn = document.createElement("button");
     btn.textContent = `Engage · ${m.energy} energy`;
     btn.disabled = state.energy < m.energy;
     btn.onclick = () => runMission(m);
     card.appendChild(btn);
+    const under = document.createElement("div");
+    under.className = "mastery-under";
+    const starEl = document.createElement("span");
+    starEl.className = "stars";
+    starEl.setAttribute("aria-label", `Mastery ${stars}`);
+    starEl.textContent = stars;
+    under.appendChild(starEl);
+    const chip = document.createElement("span");
+    chip.className = "mastery-chip";
+    if (bonus) chip.textContent = `+${Math.round(bonus * 100)}% loot`;
+    else if (!slots.s1) chip.textContent = "★1 first clear";
+    else if (!slots.s2) chip.textContent = "★2 needs clean";
+    else chip.textContent = "★3 any 3 clears";
+    under.appendChild(chip);
+    card.appendChild(under);
     root.appendChild(card);
   }
 }
@@ -804,7 +839,7 @@ function renderStations() {
     <div class="panel-head">
       <div>
         <h2>DN Relay Alpha</h2>
-        <p class="flavor">Starter station. Free at L1. Dock, trade scrap, unlock the next lane.</p>
+        <p class="flavor">Relay online. Claim when you’re ready.</p>
       </div>
     </div>
     <div class="section-label">Docked miners</div>
@@ -894,7 +929,7 @@ function renderStations() {
   root.appendChild(article);
   const note = document.createElement("p");
   note.className = "footnote";
-  note.textContent = "DN Relay Alpha is free at L1 · no paywall on the first station.";
+  note.textContent = "Relay online. Claim when you’re ready.";
   root.appendChild(note);
 }
 
