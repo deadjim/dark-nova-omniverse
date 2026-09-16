@@ -47,7 +47,7 @@ Designer DN chrome throughout: **Dark Nova: Omniverse** wordmark, **DN** mark, l
 | Corsair Gate | Lane 03. Enemy Def 16. 20 energy. |
 | Combat | Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend** only. |
 | Outcomes | Win / scrape win (margin ≤ 2, half loot) / clean sweep (margin ≥ 5, +25% loot) / loss (half XP). |
-| Revenge / Refit | On wreck: blackout → **Dark Nova · Refit** card. Free “regen and replot”, or simulated Revenge Kit (+4 Atk, one-shot, this mission only, free retry). |
+| Revenge / Refit | On wreck: blackout → **Refit and re-engage**. Body: Hull’s scrap / one-shot kit for *this* mission. CTAs: **Revenge Kit · $0.99** / **Regen and replot**. Fine print: One rematch. Doesn’t stick to your loadout. Confirm: **Spend $0.99 for +4 Atk on this retry only?** |
 
 Out of scope for V0: planets, miners, persistence, accounts, real payments.
 

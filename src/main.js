@@ -197,8 +197,11 @@ function showBlackoutThenRevenge(m) {
   setTimeout(() => {
     bo.classList.remove("show");
     state.pendingLoss = m;
-    document.getElementById("revengeCopy").textContent =
-      `Wrecked on ${m.name}. One-shot +4 Attack for a rematch of this mission only — or regen and replot.`;
+    const wreckLabel = document.getElementById("wreckMission");
+    if (wreckLabel) {
+      wreckLabel.hidden = false;
+      wreckLabel.textContent = m.name;
+    }
     document.getElementById("revengeOverlay").classList.add("show");
   }, 1200);
 }
@@ -231,8 +234,12 @@ document.getElementById("freePath").onclick = () => {
 document.getElementById("buyRevenge").onclick = () => {
   const m = state.pendingLoss;
   if (!m) return;
-  document.getElementById("confirmMission").textContent = m.name;
-  document.getElementById("confirmOverlay").classList.add("show");
+    const label = document.getElementById("confirmMissionLabel");
+    if (label) {
+      label.hidden = false;
+      label.textContent = m.name;
+    }
+    document.getElementById("confirmOverlay").classList.add("show");
 };
 
 document.getElementById("cancelBuy").onclick = () => {
