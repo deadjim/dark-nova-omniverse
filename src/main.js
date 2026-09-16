@@ -28,26 +28,62 @@ const MISSIONS = [
   },
 ];
 
+const WORLD_NAMES = ["Ember Rock", "Ash Hold", "Corsair Reach", "Drift Hollow", "Nova Shard"];
+
+// V0 playtest ladder (sheet L1 planet = 100,000). Labeled in UI + README.
+const ECON = {
+  starterCreds: 4000,
+  planetL1: 2500,
+  planetUpgrade: [0, 6000, 14000, 32000],
+  planetSlots: [0, 1, 2, 4, 6],
+  factoryCost: 700,
+  factoryRate: 8,
+  factoryTick: 10,
+  factoryService: 70,
+  factoryRepair: 180,
+  minerCost: 350,
+  minerMineRate: 4,
+  minerMineTick: 12,
+  minerWearMine: 8,
+  minerWearRep: 5,
+  minerReplicate: 50,
+  stationCost: 1200,
+  stationRate: 5,
+  stationTick: 20,
+  dockCreds: 12,
+  dockCooldown: 25,
+};
+
 const state = {
   energy: 100,
   energyCap: 100,
-  creds: 0,
+  creds: ECON.starterCreds,
   level: 1,
   xp: 1,
   skills: { atk: 5, def: 5, luck: 2, spd: 3 },
   points: 0,
   regenLeft: 60,
+  nextId: 1,
+  planets: [],
+  miners: [],
+  stations: [],
 };
 
+function uid() {
+  return state.nextId++;
+}
+
+function spend(n) {
+  if (state.creds < n) return false;
+  state.creds -= n;
+  return true;
+}
+
 function xpForLevel(level) {
-  // cumulative XP required to REACH this level
-  // L1 starts with 1 XP (already "at" L1)
-  // L2 = 10, L3 = 20, L4 = 40, L5 = 80, then doubles
   if (level <= 1) return 1;
   if (level === 2) return 10;
   if (level === 3) return 20;
   if (level === 4) return 40;
-  // level 5 = 80, 6 = 160, ...
   return 40 * Math.pow(2, level - 4);
 }
 
@@ -145,7 +181,6 @@ function runMission(m) {
 
   const playerAtk = state.skills.atk;
   const p = combatScore(playerAtk, state.skills.luck, state.skills.spd);
-  // Enemy is a static Defend check — no enemy luck/speed roll
   const enemyDef = m.enemy.def;
   const margin = p.score - enemyDef;
 
@@ -186,6 +221,352 @@ function showDefeat(m) {
   document.getElementById("defeatOverlay").classList.add("show");
 }
 
+function planetSlots(level) {
+  return ECON.planetSlots[level] || ECON.planetSlots[ECON.planetSlots.length - 1];
+}
+
+function buyPlanet() {
+  if (!spend(ECON.planetL1)) {
+    log("Need more creds for an L1 world.", "lose");
+    return;
+  }
+  const name = WORLD_NAMES[(state.planets.length) % WORLD_NAMES.length];
+  state.planets.push({
+    id: uid(),
+    name,
+    level: 1,
+    factories: [],
+  });
+  log(`Claimed ${name} (L1, 1 factory berth). V0 playtest price ${ECON.planetL1}.`, "win");
+  render();
+}
+
+function upgradePlanet(planet) {
+  const next = planet.level + 1;
+  if (next >= ECON.planetSlots.length) {
+    log(`${planet.name} is at max V0 level.`, "info");
+    return;
+  }
+  const cost = ECON.planetUpgrade[next - 1];
+  if (!spend(cost)) {
+    log(`Need ${cost} creds to raise ${planet.name}.`, "lose");
+    return;
+  }
+  planet.level = next;
+  log(`${planet.name} raised to L${next} · ${planetSlots(next)} factory berths.`, "info");
+  render();
+}
+
+function addFactory(planet) {
+  if (planet.factories.length >= planetSlots(planet.level)) {
+    log(`${planet.name} has no open berths. Raise the world first.`, "lose");
+    return;
+  }
+  if (!spend(ECON.factoryCost)) {
+    log("Need more creds for a factory.", "lose");
+    return;
+  }
+  planet.factories.push({
+    id: uid(),
+    pending: 0,
+    serviceLeft: ECON.factoryService,
+    produceLeft: ECON.factoryTick,
+    failed: false,
+  });
+  log(`Factory online on ${planet.name}. Service it or lose the yield.`, "info");
+  render();
+}
+
+function serviceFactory(factory, planet) {
+  if (factory.failed) {
+    if (!spend(ECON.factoryRepair)) {
+      log("Need more creds to repair that factory.", "lose");
+      return;
+    }
+    factory.failed = false;
+    factory.pending = 0;
+    factory.serviceLeft = ECON.factoryService;
+    factory.produceLeft = ECON.factoryTick;
+    log(`Factory on ${planet.name} repaired. Line is cold — yield was lost.`, "info");
+    render();
+    return;
+  }
+  const got = factory.pending;
+  state.creds += got;
+  factory.pending = 0;
+  factory.serviceLeft = ECON.factoryService;
+  log(got ? `Serviced ${planet.name} factory. Collected ${got} creds.` : `Serviced ${planet.name} factory. Line reset.`, "win");
+  render();
+}
+
+function buyMiner() {
+  if (!spend(ECON.minerCost)) {
+    log("Need more creds for a miner.", "lose");
+    return;
+  }
+  state.miners.push({
+    id: uid(),
+    mode: "mine",
+    wear: 0,
+    tick: ECON.minerMineTick,
+    replicateLeft: ECON.minerReplicate,
+  });
+  log("Robotic miner deployed. Mine or self-replicate — not both.", "info");
+  render();
+}
+
+function setMinerMode(miner, mode) {
+  if (miner.wear >= 100) return;
+  miner.mode = mode;
+  miner.tick = ECON.minerMineTick;
+  miner.replicateLeft = ECON.minerReplicate;
+  log(`Miner #${miner.id} set to ${mode}.`, "info");
+  render();
+}
+
+function buyStation() {
+  if (!spend(ECON.stationCost)) {
+    log("Need more creds for a DN dock.", "lose");
+    return;
+  }
+  state.stations.push({
+    id: uid(),
+    name: `DN Dock ${state.stations.length + 1}`,
+    tick: ECON.stationTick,
+    dockLeft: 0,
+  });
+  log("Space station claimed. Dock fees tick in while the page is open.", "win");
+  render();
+}
+
+function dockStation(station) {
+  if (station.dockLeft > 0) {
+    log(`${station.name} is cycling the last dock.`, "info");
+    return;
+  }
+  state.creds += ECON.dockCreds;
+  station.dockLeft = ECON.dockCooldown;
+  log(`Docked at ${station.name}. +${ECON.dockCreds} creds.`, "win");
+  render();
+}
+
+function tickEconomy() {
+  for (const planet of state.planets) {
+    for (const f of planet.factories) {
+      if (f.failed) continue;
+      f.produceLeft -= 1;
+      if (f.produceLeft <= 0) {
+        f.produceLeft = ECON.factoryTick;
+        f.pending += ECON.factoryRate;
+      }
+      f.serviceLeft -= 1;
+      if (f.serviceLeft <= 0) {
+        f.failed = true;
+        const lost = f.pending;
+        f.pending = 0;
+        log(`Factory on ${planet.name} failed. Lost ${lost} uncollected creds.`, "lose");
+      }
+    }
+  }
+
+  const born = [];
+  for (const miner of state.miners) {
+    if (miner.wear >= 100) continue;
+    if (miner.mode === "mine") {
+      miner.tick -= 1;
+      if (miner.tick <= 0) {
+        miner.tick = ECON.minerMineTick;
+        state.creds += ECON.minerMineRate;
+        miner.wear = Math.min(100, miner.wear + ECON.minerWearMine);
+        if (miner.wear >= 100) log(`Miner #${miner.id} wore out and is scrap.`, "lose");
+      }
+    } else {
+      miner.replicateLeft -= 1;
+      if (miner.replicateLeft <= 0) {
+        miner.replicateLeft = ECON.minerReplicate;
+        miner.wear = Math.min(100, miner.wear + ECON.minerWearRep);
+        born.push({
+          id: uid(),
+          mode: "mine",
+          wear: 0,
+          tick: ECON.minerMineTick,
+          replicateLeft: ECON.minerReplicate,
+        });
+        log(`Miner #${miner.id} replicated a chassis.`, "info");
+        if (miner.wear >= 100) log(`Miner #${miner.id} wore out after the split.`, "lose");
+      }
+    }
+  }
+  state.miners.push(...born);
+
+  for (const st of state.stations) {
+    st.tick -= 1;
+    if (st.tick <= 0) {
+      st.tick = ECON.stationTick;
+      state.creds += ECON.stationRate;
+    }
+    if (st.dockLeft > 0) st.dockLeft -= 1;
+  }
+}
+
+function renderPlanets() {
+  const root = document.getElementById("planets");
+  root.innerHTML = "";
+  const buy = document.getElementById("buyPlanet");
+  buy.textContent = `Claim L1 world · ${ECON.planetL1} creds`;
+  buy.disabled = state.creds < ECON.planetL1;
+
+  if (!state.planets.length) {
+    root.innerHTML = `<p class="hint">No worlds claimed. L1 holds 1 factory. Sheet price 100,000 — V0 playtest is ${ECON.planetL1}.</p>`;
+    return;
+  }
+
+  for (const planet of state.planets) {
+    const slots = planetSlots(planet.level);
+    const next = planet.level + 1;
+    const upCost = ECON.planetUpgrade[next - 1];
+    const card = document.createElement("div");
+    card.className = "asset";
+    card.innerHTML = `
+      <div class="lane">World · DN</div>
+      <h3>${planet.name}</h3>
+      <div class="chips">
+        <span class="chip">Level <strong>${planet.level}</strong></span>
+        <span class="chip">Factories <strong>${planet.factories.length}/${slots}</strong></span>
+      </div>
+    `;
+    const row = document.createElement("div");
+    row.className = "btn-row";
+    const add = document.createElement("button");
+    add.className = "secondary";
+    add.textContent = `Build factory · ${ECON.factoryCost}`;
+    add.disabled = planet.factories.length >= slots || state.creds < ECON.factoryCost;
+    add.onclick = () => addFactory(planet);
+    row.appendChild(add);
+    if (next < ECON.planetSlots.length) {
+      const up = document.createElement("button");
+      up.className = "secondary";
+      up.textContent = `Raise L${next} · ${upCost}`;
+      up.disabled = state.creds < upCost;
+      up.onclick = () => upgradePlanet(planet);
+      row.appendChild(up);
+    }
+    card.appendChild(row);
+    root.appendChild(card);
+  }
+}
+
+function renderFactories() {
+  const root = document.getElementById("factories");
+  root.innerHTML = "";
+  const list = [];
+  for (const planet of state.planets) {
+    for (const f of planet.factories) list.push({ planet, f });
+  }
+  if (!list.length) {
+    root.innerHTML = `<p class="hint">No factories. Claim a world, then build. Unserviced lines fail and dump pending creds.</p>`;
+    return;
+  }
+  for (const { planet, f } of list) {
+    const card = document.createElement("div");
+    card.className = "asset" + (f.failed ? " failed" : f.serviceLeft <= 20 ? " warn" : "");
+    const status = f.failed ? "FAILED" : f.serviceLeft <= 20 ? "service due" : "online";
+    card.innerHTML = `
+      <div class="lane">${planet.name} · factory</div>
+      <div class="chips">
+        <span class="chip">Pending <strong>${f.pending}</strong></span>
+        <span class="chip">Service <strong>${f.failed ? "—" : f.serviceLeft + "s"}</strong></span>
+        <span class="chip">Status <strong>${status}</strong></span>
+      </div>
+    `;
+    const btn = document.createElement("button");
+    btn.className = f.failed ? "danger" : "secondary";
+    btn.textContent = f.failed ? `Repair · ${ECON.factoryRepair}` : "Service · collect";
+    btn.disabled = f.failed && state.creds < ECON.factoryRepair;
+    btn.onclick = () => serviceFactory(f, planet);
+    card.appendChild(btn);
+    root.appendChild(card);
+  }
+}
+
+function renderMiners() {
+  const root = document.getElementById("miners");
+  root.innerHTML = "";
+  const buy = document.getElementById("buyMiner");
+  buy.textContent = `Buy robotic miner · ${ECON.minerCost} creds`;
+  buy.disabled = state.creds < ECON.minerCost;
+
+  if (!state.miners.length) {
+    root.innerHTML = `<p class="hint">No miners. They grind small creds or copy themselves. Wear-out is scrap.</p>`;
+    return;
+  }
+
+  for (const miner of state.miners) {
+    const scrap = miner.wear >= 100;
+    const card = document.createElement("div");
+    card.className = "asset" + (scrap ? " failed" : "");
+    const eta = miner.mode === "mine" ? `next haul ${miner.tick}s` : `replica ${miner.replicateLeft}s`;
+    card.innerHTML = `
+      <div class="lane">Miner #${miner.id} · DN</div>
+      <div class="chips">
+        <span class="chip">Mode <strong>${scrap ? "scrap" : miner.mode}</strong></span>
+        <span class="chip">Wear <strong>${miner.wear}%</strong></span>
+        <span class="chip">${scrap ? "dead chassis" : eta}</span>
+      </div>
+      <div class="bar"><span style="width:${miner.wear}%"></span></div>
+    `;
+    if (!scrap) {
+      const row = document.createElement("div");
+      row.className = "btn-row";
+      const mine = document.createElement("button");
+      mine.className = miner.mode === "mine" ? "cyan" : "secondary";
+      mine.textContent = "Mine";
+      mine.onclick = () => setMinerMode(miner, "mine");
+      const rep = document.createElement("button");
+      rep.className = miner.mode === "replicate" ? "cyan" : "secondary";
+      rep.textContent = "Replicate";
+      rep.onclick = () => setMinerMode(miner, "replicate");
+      row.appendChild(mine);
+      row.appendChild(rep);
+      card.appendChild(row);
+    }
+    root.appendChild(card);
+  }
+}
+
+function renderStations() {
+  const root = document.getElementById("stations");
+  root.innerHTML = "";
+  const buy = document.getElementById("buyStation");
+  buy.textContent = `Buy DN dock · ${ECON.stationCost} creds`;
+  buy.disabled = state.creds < ECON.stationCost;
+
+  if (!state.stations.length) {
+    root.innerHTML = `<p class="hint">No stations. A dock collects fees over time. Tap Dock for a small haul.</p>`;
+    return;
+  }
+
+  for (const st of state.stations) {
+    const card = document.createElement("div");
+    card.className = "asset";
+    card.innerHTML = `
+      <div class="lane">Station · DN</div>
+      <h3>${st.name}</h3>
+      <div class="chips">
+        <span class="chip">Fees <strong>+${ECON.stationRate}/${ECON.stationTick}s</strong></span>
+        <span class="chip">Next <strong>${st.tick}s</strong></span>
+      </div>
+    `;
+    const btn = document.createElement("button");
+    btn.className = "cyan";
+    btn.textContent = st.dockLeft > 0 ? `Dock cycling · ${st.dockLeft}s` : `Dock · +${ECON.dockCreds} creds`;
+    btn.disabled = st.dockLeft > 0;
+    btn.onclick = () => dockStation(st);
+    card.appendChild(btn);
+    root.appendChild(card);
+  }
+}
+
 function render() {
   document.getElementById("energy").textContent = state.energy;
   document.getElementById("energyCap").textContent = state.energyCap;
@@ -203,12 +584,20 @@ function render() {
   document.getElementById("tickLabel").textContent = `regen ${state.regenLeft}s`;
   renderSkills();
   renderMissions();
+  renderPlanets();
+  renderFactories();
+  renderMiners();
+  renderStations();
 }
 
 document.getElementById("defeatDismiss").onclick = () => {
   document.getElementById("defeatOverlay").classList.remove("show");
   log("You replot. Wait for energy or dump Atk on level-up.", "info");
 };
+
+document.getElementById("buyPlanet").onclick = buyPlanet;
+document.getElementById("buyMiner").onclick = buyMiner;
+document.getElementById("buyStation").onclick = buyStation;
 
 setInterval(() => {
   state.regenLeft -= 1;
@@ -219,8 +608,10 @@ setInterval(() => {
       log("+10 energy regenerated.", "info");
     }
   }
+  tickEconomy();
   render();
 }, 1000);
 
 log("Dark Nova: Omniverse V0 online. Ember Drift → Ash Belt (Def 9) → Corsair Gate.", "info");
+log("Loop 2 skeleton live: planets, factories, miners, docks. No IAP.", "info");
 render();

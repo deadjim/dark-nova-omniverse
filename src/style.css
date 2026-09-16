@@ -258,10 +258,35 @@ button.danger {
 .mission.ember::before { background: linear-gradient(180deg, var(--ash), var(--ember)); }
 .mission.ash::before { background: linear-gradient(180deg, #ffd27a, #c47a2a); }
 .mission.corsair::before { background: linear-gradient(180deg, #7af0ff, #3a6cff); }
-.mission .lane {
+.mission .lane,
+.asset .lane {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--muted);
   margin-bottom: 2px;
+}
+.asset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(0,0,0,.22);
+  margin-bottom: 10px;
+}
+.asset h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: var(--cyan);
+}
+.asset.warn { border-color: #8a6a2a; }
+.asset.failed { border-color: #6a2438; }
+.btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.btn-row button,
+.asset > button {
+  width: 100%;
+  min-height: 44px;
 }
