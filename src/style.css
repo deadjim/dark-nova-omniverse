@@ -194,25 +194,18 @@ button.danger {
 .card h2 { margin: 0 0 6px; font-size: 1.15rem; }
 .card p { margin: 0 0 12px; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
 .actions { display: grid; gap: 8px; }
-.blackout {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 50;
-  transition: opacity .25s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ff6b2c;
+.dn-chip {
+  display: inline-block;
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: .08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  font-size: 0.85rem;
+  color: #c9b6ff;
+  border: 1px solid #3a2a5a;
+  border-radius: 999px;
+  padding: 3px 8px;
+  margin-bottom: 10px;
 }
-.blackout.show { opacity: 1; pointer-events: auto; }
 .skill-row {
   display: flex;
   justify-content: space-between;
@@ -271,47 +264,4 @@ button.danger {
   letter-spacing: 0.12em;
   color: var(--muted);
   margin-bottom: 2px;
-}
-.card.revenge {
-  border-color: #3a2a5a;
-  background:
-    radial-gradient(400px 180px at 50% -20%, rgba(114,76,159,.35), transparent 70%),
-    #121826;
-}
-.card.revenge .dn-chip {
-  display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #c9b6ff;
-  border: 1px solid #3a2a5a;
-  border-radius: 999px;
-  padding: 3px 8px;
-  margin-bottom: 10px;
-}
-.card.revenge h2 { color: var(--ash); }
-.card.revenge .free-note {
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin: -4px 0 10px;
-}
-.card.revenge em {
-  font-style: italic;
-  color: var(--ash);
-  font-weight: 650;
-}
-.blackout .dn-mark {
-  width: 48px;
-  height: 48px;
-  font-size: 0.9rem;
-  margin-bottom: 12px;
-  border-color: #5a3040;
-  color: var(--ember);
-}
-.blackout-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
 }

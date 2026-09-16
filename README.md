@@ -15,7 +15,7 @@ Public Vercel static deploy of the current V0 `docs/` build. No login. HTTP 200.
 - Surge (`dark-nova-omniverse.surge.sh`) returns **HTTP 451** and is not a beta link. Do not use it.
 - This Vercel URL is an anonymous production deploy. **Claim it within 60 minutes** at the link above or it expires. Claiming attaches it to your Vercel account.
 - This GitHub repo is **private**. GitHub Pages could not be enabled from the agent (Pages/Actions APIs return 403). Do not wait on Pages for the beta.
-- Revenge Kit is **simulated** ($0.99 sim only). No real checkout.
+- No real checkout. PvE has **no Revenge IAP** — loss is Defeat + Regen and replot only.
 - V0 has no save file. Refresh resets energy, skills, and creds.
 
 ## Run locally
@@ -36,7 +36,7 @@ You can also drop the `docs/` folder onto Vercel or Netlify. Do not use Surge (H
 
 ## What V0 includes
 
-Designer DN chrome throughout: **Dark Nova: Omniverse** wordmark, **DN** mark, lane chips, wreck blackout, Refit card.
+Designer DN chrome throughout: **Dark Nova: Omniverse** wordmark, **DN** mark, lane chips.
 
 | Piece | V0 behavior |
 | --- | --- |
@@ -47,9 +47,9 @@ Designer DN chrome throughout: **Dark Nova: Omniverse** wordmark, **DN** mark, l
 | Corsair Gate | Lane 03. Enemy Def 16. 20 energy. |
 | Combat | Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend** only. |
 | Outcomes | Win / scrape win (margin ≤ 2, half loot) / clean sweep (margin ≥ 5, +25% loot) / loss (half XP). |
-| Revenge / Refit | On wreck: blackout → **Refit and re-engage**. Body: Hull’s scrap / one-shot kit for *this* mission. CTAs: **Revenge Kit · $0.99** / **Regen and replot**. Fine print: One rematch. Doesn’t stick to your loadout. Confirm: **Spend $0.99 for +4 Atk on this retry only?** |
+| Defeat | Loss shows a **Defeat** result and **Regen and replot** only. No Revenge Kit, no $0.99, no +4 Atk rematch. |
 
-Out of scope for V0: planets, miners, persistence, accounts, real payments.
+Out of scope for this cut: Revenge IAP, persistence, accounts, real payments.
 
 ## Repo layout
 

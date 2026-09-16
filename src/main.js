@@ -37,8 +37,6 @@ const state = {
   skills: { atk: 5, def: 5, luck: 2, spd: 3 },
   points: 0,
   regenLeft: 60,
-  revenge: null, // { missionId, atkBonus }
-  pendingLoss: null,
 };
 
 function xpForLevel(level) {
@@ -138,32 +136,23 @@ function applyLevelUps() {
   if (gained) log(`Level up ×${gained} → L${state.level}. +${gained * 3} skill points.`, "info");
 }
 
-function runMission(m, opts = {}) {
-  if (!opts.freeRetry && state.energy < m.energy) {
+function runMission(m) {
+  if (state.energy < m.energy) {
     log("Not enough energy.", "lose");
     return;
   }
-  if (!opts.freeRetry) state.energy -= m.energy;
+  state.energy -= m.energy;
 
-  const bonusAtk =
-    state.revenge && state.revenge.missionId === m.id ? state.revenge.atkBonus : 0;
-  const playerAtk = state.skills.atk + bonusAtk;
+  const playerAtk = state.skills.atk;
   const p = combatScore(playerAtk, state.skills.luck, state.skills.spd);
   // Enemy is a static Defend check — no enemy luck/speed roll
   const enemyDef = m.enemy.def;
   const margin = p.score - enemyDef;
-  const bonusNote = bonusAtk ? ` [Revenge +${bonusAtk} Atk]` : "";
 
   log(
-    `${m.name}: you ${p.score} (Atk ${playerAtk}${bonusNote} +⌊Spd/4⌋ ${Math.floor(state.skills.spd / 4)} +roll ${p.roll}) vs enemy Def ${enemyDef} (static)`,
+    `${m.name}: you ${p.score} (Atk ${playerAtk} +⌊Spd/4⌋ ${Math.floor(state.skills.spd / 4)} +roll ${p.roll}) vs enemy Def ${enemyDef} (static)`,
     "info"
   );
-
-  // consume revenge kit after the fight it buffed
-  if (bonusAtk) {
-    state.revenge = null;
-    log("Revenge Kit spent — one-shot over.", "info");
-  }
 
   if (p.score >= enemyDef) {
     let loot = m.loot;
@@ -187,23 +176,14 @@ function runMission(m, opts = {}) {
     applyLevelUps();
     log(`Loss (margin ${margin}). +${xpGain} XP. Hull critical.`, "lose");
     render();
-    showBlackoutThenRevenge(m);
+    showDefeat(m);
   }
 }
 
-function showBlackoutThenRevenge(m) {
-  const bo = document.getElementById("blackout");
-  bo.classList.add("show");
-  setTimeout(() => {
-    bo.classList.remove("show");
-    state.pendingLoss = m;
-    const wreckLabel = document.getElementById("wreckMission");
-    if (wreckLabel) {
-      wreckLabel.hidden = false;
-      wreckLabel.textContent = m.name;
-    }
-    document.getElementById("revengeOverlay").classList.add("show");
-  }, 1200);
+function showDefeat(m) {
+  document.getElementById("defeatCopy").textContent =
+    `Lost on ${m.name}. Regen energy and replot the lanes.`;
+  document.getElementById("defeatOverlay").classList.add("show");
 }
 
 function render() {
@@ -225,37 +205,9 @@ function render() {
   renderMissions();
 }
 
-document.getElementById("freePath").onclick = () => {
-  document.getElementById("revengeOverlay").classList.remove("show");
-  state.pendingLoss = null;
-  log("You replot free. Wait for energy or dump Atk on level-up.", "info");
-};
-
-document.getElementById("buyRevenge").onclick = () => {
-  const m = state.pendingLoss;
-  if (!m) return;
-    const label = document.getElementById("confirmMissionLabel");
-    if (label) {
-      label.hidden = false;
-      label.textContent = m.name;
-    }
-    document.getElementById("confirmOverlay").classList.add("show");
-};
-
-document.getElementById("cancelBuy").onclick = () => {
-  document.getElementById("confirmOverlay").classList.remove("show");
-};
-
-document.getElementById("confirmBuy").onclick = () => {
-  const m = state.pendingLoss;
-  document.getElementById("confirmOverlay").classList.remove("show");
-  document.getElementById("revengeOverlay").classList.remove("show");
-  if (!m) return;
-  state.revenge = { missionId: m.id, atkBonus: 4 };
-  state.pendingLoss = null;
-  log(`Revenge Kit armed for ${m.name} (+4 Atk, one shot). Re-engaging.`, "info");
-  // free retry of same mission (energy already spent on the loss)
-  runMission(m, { freeRetry: true });
+document.getElementById("defeatDismiss").onclick = () => {
+  document.getElementById("defeatOverlay").classList.remove("show");
+  log("You replot. Wait for energy or dump Atk on level-up.", "info");
 };
 
 setInterval(() => {
