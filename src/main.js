@@ -172,6 +172,57 @@ function claimFactory(factory) {
   render();
 }
 
+function claimSystem(sys) {
+  let n = 0;
+  const mine = state.minePile[sys.id] || 0;
+  if (mine) {
+    state.minePile[sys.id] = 0;
+    state.pileFull[sys.id] = false;
+    n += mine;
+  }
+  for (const f of sys.factories) {
+    if (f.pile) {
+      n += f.pile;
+      f.pile = 0;
+    }
+  }
+  if (!n) {
+    toast("Nothing stacked here yet — wait for a cycle.");
+    return;
+  }
+  gainCreds(n);
+  log(`Claim burst ${n} creds on ${sys.name}.`, "win");
+  toast(`Banked ${n} creds.`, true);
+  maybeUnlockMids();
+  render();
+}
+
+function pileHeat(amount, cap) {
+  if (!amount) return "empty";
+  const pct = amount / cap;
+  if (pct >= 1) return "full";
+  if (pct >= 0.7) return "hot";
+  if (pct >= 0.3) return "mid";
+  return "low";
+}
+
+function credChip({ amount, cap, label, onClaim }) {
+  const heat = pileHeat(amount, cap);
+  const pct = Math.min(100, Math.round((amount / cap) * 100));
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = `cred-chip heat-${heat}`;
+  btn.disabled = !amount;
+  btn.setAttribute("aria-label", amount ? `Claim ${amount} ${label}` : `${label} empty`);
+  btn.innerHTML = `
+    <span class="cred-chip-amt">${amount ? `+${amount.toLocaleString()}` : "—"}</span>
+    <span class="cred-chip-sub">${amount ? (heat === "full" ? "FULL · tap claim" : `${pct}% · tap claim`) : label}</span>
+    <span class="cred-chip-fill" style="width:${pct}%"></span>
+  `;
+  btn.onclick = onClaim;
+  return btn;
+}
+
 function xpForLevel(level) {
   if (level <= 1) return 1;
   if (level === 2) return 10;
@@ -508,7 +559,6 @@ function minerBox(dock, label) {
   const left = state.replicateLeft[dock];
   const pile = state.minePile[dock] || 0;
   const cap = mineCap(dock);
-  const full = pile >= cap;
   const wrap = document.createElement("div");
   wrap.className = "miners-box";
   wrap.innerHTML = `
@@ -524,18 +574,18 @@ function minerBox(dock, label) {
         ? `<span class="gain">+${gain}/cycle into pile</span> · ${count ? `${ECON.minePerMiner} each · clock ${CYCLE}s` : "no hulls docked"}`
         : `<span class="cost">${ECON.replicateCycles} cycles · no creds</span> · grow +1 · mine paused${count ? ` · ${left} left` : ""}`}
     </div>
-    <div class="pile-row${full ? " full" : ""}">
-      <div>
-        <div class="pile-k">Unclaimed mine pile</div>
-        <div class="pile-v">${pile.toLocaleString()} / ${cap.toLocaleString()}${full ? " · full" : ""}</div>
-      </div>
-      <button type="button" class="claim" ${pile ? "" : "disabled"}>Claim</button>
-    </div>
   `;
   wrap.querySelectorAll(".mode-chip").forEach((chip) => {
     chip.onclick = () => setMode(dock, chip.getAttribute("data-mode"));
   });
-  wrap.querySelector(".claim").onclick = () => claimMine(dock);
+  wrap.appendChild(
+    credChip({
+      amount: pile,
+      cap,
+      label: "mine pile",
+      onClaim: () => claimMine(dock),
+    })
+  );
   return wrap;
 }
 
@@ -549,11 +599,11 @@ function renderProgress(root) {
     <div class="panel-head">
       <div>
         <h2>Path to Ember Reach</h2>
-        <p class="flavor">Bar is lifetime earned toward ${ECON.planetL1.toLocaleString()} — scrap spends never pull it back. Wallet still needs ${ECON.planetL1.toLocaleString()} on hand to claim the world.</p>
+        <p class="flavor">Earned toward 100k — scrap spends never pull this bar back. Wallet still needs ${ECON.planetL1.toLocaleString()} on hand to claim the world.</p>
       </div>
     </div>
     <div class="meter">
-      <div class="row"><span>Lifetime earned</span><strong>${state.earned.toLocaleString()} / ${ECON.planetL1.toLocaleString()}</strong></div>
+      <div class="row"><span>Earned toward 100k</span><strong>${state.earned.toLocaleString()} / ${ECON.planetL1.toLocaleString()}</strong></div>
       <div class="bar"><span style="width:${planetPct}%"></span></div>
     </div>
   `;
@@ -580,6 +630,20 @@ function renderSystems() {
     const head = document.createElement("div");
     head.className = "panel-head";
     head.innerHTML = `<div><h2>${sys.name}</h2><p class="flavor">${sys.flavor}</p></div>`;
+    if (sys.owned) {
+      const sysMine = state.minePile[sys.id] || 0;
+      const sysFact = sys.factories.reduce((sum, f) => sum + (f.pile || 0), 0);
+      const sysPile = sysMine + sysFact;
+      const sysCap = mineCap(sys.id) + sys.factories.length * factoryCap();
+      head.appendChild(
+        credChip({
+          amount: sysPile,
+          cap: sysCap,
+          label: "planet pile",
+          onClaim: () => claimSystem(sys),
+        })
+      );
+    }
     article.appendChild(head);
 
     if (!sys.owned) {
@@ -609,22 +673,23 @@ function renderSystems() {
       row.className = "factory" + (neglected ? " neglected" : "");
       const pile = f.pile || 0;
       const fcap = factoryCap();
-      const piledFull = pile >= fcap;
       row.innerHTML = `
         <div class="factory-meta">
           <p class="factory-name">${f.name}</p>
           <span class="status ${neglected ? "neglected" : "online"}"><span class="dot"></span> ${neglected ? "Neglected" : "Online"}</span>
-          ${neglected ? `<div class="bleed">Bleeding −${cap} creds/cycle · capped ≤ mine−1</div>` : f.lockedOnline ? `<div class="hint" style="margin:4px 0 0">Stays Online · free regen service path</div>` : ""}
-          <div class="pile-line${piledFull ? " full" : ""}">Unclaimed ${pile.toLocaleString()} / ${fcap.toLocaleString()}${piledFull ? " · full" : neglected ? "" : ` · +${ECON.factoryRate}/cycle`}</div>
+          ${neglected ? `<div class="bleed">Bleeding −${cap} creds/cycle · capped ≤ mine−1</div>` : f.lockedOnline ? `<div class="hint" style="margin:4px 0 0">Stays Online · free regen service path</div>` : `<div class="hint" style="margin:4px 0 0">+${ECON.factoryRate}/cycle into pile</div>`}
         </div>
       `;
       const actions = document.createElement("div");
       actions.className = "factory-actions";
-      const claim = document.createElement("button");
-      claim.className = "claim";
-      claim.textContent = pile ? `Claim ${pile}` : "Claim";
-      claim.disabled = !pile;
-      claim.onclick = () => claimFactory(f);
+      actions.appendChild(
+        credChip({
+          amount: pile,
+          cap: fcap,
+          label: "factory pile",
+          onClaim: () => claimFactory(f),
+        })
+      );
       const svc = document.createElement("button");
       svc.textContent = `Service factory · ${ECON.serviceEnergy}⚡`;
       svc.disabled = f.lockedOnline || state.energy < ECON.serviceEnergy;
@@ -633,7 +698,6 @@ function renderSystems() {
       ign.className = "ghost";
       ign.textContent = "Ignore";
       ign.onclick = () => ignoreFactory(sys, f);
-      actions.appendChild(claim);
       actions.appendChild(svc);
       actions.appendChild(ign);
       row.appendChild(actions);

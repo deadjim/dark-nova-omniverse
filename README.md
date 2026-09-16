@@ -49,7 +49,7 @@ Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend**. Ember 
 | Service | **8 energy**. Regen +10/60s always covers one factory. |
 | Bleed | **≤ mine−1** (e.g. −23 vs +24). No death spiral. |
 | Soft-lock | **Rock Line / Forge Alpha stay Online**. |
-| First planet | **Ember Reach = 100,000** (not discounted). Bar = **lifetime earned** — scrap spends never shrink it. |
+| First planet | **Ember Reach = 100,000** (not discounted). Bar = **Earned toward 100k** (lifetime) — scrap spends never shrink it. |
 | Mid unlocks | **2,500 earned** → second miner berth. **12,000 earned** → Ash Drift L0 outpost. |
 
-How to try it: open Systems, wait a 12s cycle, tap **Claim** on the mine/factory pile (wallet does not tick up on its own), buy scrap and watch the 100k bar hold, Ignore Slag Line Beta for capped bleed, Service for 8⚡, toggle Replicate (3 cycles, no creds), visit Stations for the free relay + scrap + Glass Meridian gate (roster still frozen).
+How to try it: open Systems, wait a 12s cycle, tap the glowing cred chip on the planet or miner (wallet does not tick up on its own — piles never decay), buy scrap and watch **Earned toward 100k** hold, Ignore Slag Line Beta for capped bleed, Service for 8⚡, toggle Replicate (3 cycles, no Advance button), visit Stations for the free relay + scrap + Glass Meridian gate (roster still frozen).
