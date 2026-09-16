@@ -149,13 +149,13 @@ function runMission(m, opts = {}) {
     state.revenge && state.revenge.missionId === m.id ? state.revenge.atkBonus : 0;
   const playerAtk = state.skills.atk + bonusAtk;
   const p = combatScore(playerAtk, state.skills.luck, state.skills.spd);
-  const e = combatScore(m.enemy.def, m.enemy.luck, m.enemy.spd);
-  // Note: enemy score uses Defend as the "atk" slot per sheet (you roll Attack vs their Defend)
-  const margin = p.score - e.score;
+  // Enemy is a static Defend check — no enemy luck/speed roll
+  const enemyDef = m.enemy.def;
+  const margin = p.score - enemyDef;
   const bonusNote = bonusAtk ? ` [Revenge +${bonusAtk} Atk]` : "";
 
   log(
-    `${m.name}: you ${p.score} (Atk ${playerAtk}${bonusNote} +⌊Spd/4⌋ ${Math.floor(state.skills.spd / 4)} +roll ${p.roll}) vs enemy ${e.score} (Def ${m.enemy.def} +⌊Spd/4⌋ ${Math.floor(m.enemy.spd / 4)} +roll ${e.roll})`,
+    `${m.name}: you ${p.score} (Atk ${playerAtk}${bonusNote} +⌊Spd/4⌋ ${Math.floor(state.skills.spd / 4)} +roll ${p.roll}) vs enemy Def ${enemyDef} (static)`,
     "info"
   );
 
@@ -165,7 +165,7 @@ function runMission(m, opts = {}) {
     log("Revenge Kit spent — one-shot over.", "info");
   }
 
-  if (p.score >= e.score) {
+  if (p.score >= enemyDef) {
     let loot = m.loot;
     let result = "Win";
     let cls = "win";
