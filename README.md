@@ -37,7 +37,7 @@ Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend**. No Rev
 | Lane | Energy | Def | Loot | XP |
 | --- | --- | --- | --- | --- |
 | Ember Drift | 5 | 6 | 80 | 3 |
-| Cinder Sweep | 6 | 7 | 100 | 4 |
+| Cinder Sweep | 6 | 7 | 110 | 4 |
 | Ash Belt Run | 12 | 9 | 220 | 8 |
 | Slag Corridor | 14 | 10 | 260 | 9 |
 | Glass Meridian | 16 | 12 | 340 | 12 |

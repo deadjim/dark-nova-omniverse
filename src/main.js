@@ -16,7 +16,7 @@ const MISSIONS = [
     blurb: "Cinder patrol. Sweep the lane, pocket the glow.",
     enemy: { atk: 5, def: 7, luck: 2, spd: 3 },
     energy: 6,
-    loot: 100,
+    loot: 110,
     xp: 4,
     tier: 1,
     lane: "Lane 01",
@@ -328,11 +328,14 @@ function masteryBonus(m) {
   return 0;
 }
 
-function salvageCrate(margin) {
+function salvageCrate(m, margin) {
+  const cinder = m.id === "sweep";
   if (margin <= 2) return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.5 };
   if (margin >= 8) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
-  if (margin >= 5) {
-    if (Math.random() < 0.12) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
+  const cleanAt = cinder ? 3 : 5;
+  if (margin >= cleanAt) {
+    const jackpotChance = cinder ? 0.2 : 0.12;
+    if (Math.random() < jackpotChance) return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.4 };
     return { name: "Hot Salvage", kind: "clean", lootMult: 1 };
   }
   return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.85 };
@@ -374,7 +377,7 @@ function runMission(m) {
     "info"
   );
   if (p.score >= enemyDef) {
-    const crate = salvageCrate(margin);
+    const crate = salvageCrate(m, margin);
     const rec = masteryRec(m.id);
     const bonus = masteryBonus(m);
     const loot = Math.floor(m.loot * crate.lootMult * (1 + bonus));
