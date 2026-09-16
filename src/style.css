@@ -180,10 +180,12 @@ button.block { width: 100%; margin-top: 4px; }
   width: 3px;
   background: var(--cyan);
 }
-.mission.ember::before { background: linear-gradient(180deg, var(--ash), var(--ember)); }
-.mission.ash::before { background: linear-gradient(180deg, #ffd27a, #c47a2a); }
-.mission.corsair::before { background: linear-gradient(180deg, #7af0ff, #3a6cff); }
+.mission.ember::before, .mission.sweep::before { background: linear-gradient(180deg, var(--ash), var(--ember)); }
+.mission.ash::before, .mission.slag::before { background: linear-gradient(180deg, #ffd27a, #c47a2a); }
+.mission.glass::before, .mission.corsair::before { background: linear-gradient(180deg, #7af0ff, #3a6cff); }
+.mission-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .mission h3 { margin: 0 0 4px; font-size: 0.95rem; color: var(--cyan); }
+.mission .stars { color: var(--ash); letter-spacing: 0.08em; font-size: 0.85rem; flex-shrink: 0; }
 .mission p { margin: 0 0 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
 .mission .lane {
   font-size: 0.65rem;
@@ -191,6 +193,11 @@ button.block { width: 100%; margin-top: 4px; }
   letter-spacing: 0.12em;
   color: var(--muted);
   margin-bottom: 2px;
+}
+.mastery-hint {
+  font-size: 0.7rem;
+  color: var(--ash);
+  margin: -4px 0 10px;
 }
 .chips, .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .chip {

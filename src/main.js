@@ -2,29 +2,68 @@ const MISSIONS = [
   {
     id: "ember",
     name: "Ember Drift",
-    blurb: "Scout the ember lanes. Salvage crates float in the wake.",
+    blurb: "Skim the burn. Bring back what floats.",
     enemy: { atk: 4, def: 6, luck: 1, spd: 2 },
     energy: 5,
     loot: 80,
     xp: 3,
+    tier: 1,
+    lane: "Lane 01",
+  },
+  {
+    id: "sweep",
+    name: "Cinder Sweep",
+    blurb: "Ash patrol. Sweep the lane, pocket the glow.",
+    enemy: { atk: 5, def: 7, luck: 2, spd: 3 },
+    energy: 6,
+    loot: 100,
+    xp: 4,
+    tier: 1,
+    lane: "Lane 01",
   },
   {
     id: "ash",
     name: "Ash Belt Run",
-    blurb: "Cut through the ash belt. Hot rocks, hotter guns.",
+    blurb: "Thread the slag. Don’t kiss the rocks.",
     enemy: { atk: 8, def: 9, luck: 3, spd: 4 },
     energy: 12,
     loot: 220,
     xp: 8,
+    tier: 2,
+    lane: "Lane 02",
+  },
+  {
+    id: "slag",
+    name: "Slag Corridor",
+    blurb: "Hot corridor. Exit with scrap or not at all.",
+    enemy: { atk: 9, def: 10, luck: 3, spd: 4 },
+    energy: 14,
+    loot: 260,
+    xp: 9,
+    tier: 2,
+    lane: "Lane 02",
+  },
+  {
+    id: "glass",
+    name: "Glass Meridian",
+    blurb: "Mirror field. One clean pass pays.",
+    enemy: { atk: 11, def: 12, luck: 4, spd: 5 },
+    energy: 16,
+    loot: 340,
+    xp: 12,
+    tier: 3,
+    lane: "Lane 03",
   },
   {
     id: "corsair",
     name: "Corsair Gate",
-    blurb: "Hold the gate or become salvage yourself.",
+    blurb: "Their door. Your problem.",
     enemy: { atk: 14, def: 16, luck: 5, spd: 6 },
     energy: 20,
     loot: 500,
     xp: 18,
+    tier: 3,
+    lane: "Lane 03",
   },
 ];
 
@@ -63,6 +102,7 @@ const state = {
   minerCap: 1,
   outpost: false,
   meridianOpen: false,
+  mastery: {},
   miners: [{ id: 1, dock: "cinder" }],
   modes: { cinder: "mine", ember: "mine", relay: "mine", "ash-l0": "mine" },
   replicateLeft: { cinder: 0, ember: 0, relay: 0, "ash-l0": 0 },
@@ -262,6 +302,39 @@ function applyLevelUps() {
   if (gained) log(`Level up ×${gained} → L${state.level}. +${gained * 3} skill points.`, "info");
 }
 
+function masteryRec(id) {
+  if (!state.mastery[id]) state.mastery[id] = { wins: 0, jackpots: 0 };
+  return state.mastery[id];
+}
+
+function starsFor(m) {
+  const rec = masteryRec(m.id);
+  if (rec.wins < 1) return 0;
+  const twoAt = m.tier === 2 ? 2 : 3;
+  const threeAt = m.tier === 2 ? 5 : 6;
+  if (rec.wins >= threeAt && rec.jackpots >= 1) return 3;
+  if (rec.wins >= twoAt) return 2;
+  return 1;
+}
+
+function masteryBonus(m) {
+  const s = starsFor(m);
+  if (s >= 3) return { loot: 0.12, xp: 0.1 };
+  if (s >= 2) return { loot: 0.08, xp: 0.05 };
+  if (s >= 1) return { loot: 0.05, xp: 0 };
+  return { loot: 0, xp: 0 };
+}
+
+function salvageCrate(m, margin) {
+  if (margin <= 2) return { name: "Scrap Bundle", kind: "scrape", lootMult: 0.5 };
+  if (margin >= 5 || m.id === "corsair") return { name: "Jackpot Cache", kind: "jackpot", lootMult: 1.25 };
+  return { name: "Hot Salvage", kind: "clean", lootMult: 1 };
+}
+
+function starGlyphs(n) {
+  return "★★★".split("").map((ch, i) => (i < n ? "★" : "☆")).join("");
+}
+
 function runMission(m) {
   if (state.energy < m.energy) {
     log("Not enough energy.", "lose");
@@ -277,20 +350,20 @@ function runMission(m) {
     "info"
   );
   if (p.score >= enemyDef) {
-    let loot = m.loot;
-    let result = "Win";
-    let cls = "win";
-    if (margin <= 2) {
-      loot = Math.floor(m.loot / 2);
-      result = "Scrape win";
-    } else if (margin >= 5) {
-      loot = m.loot + Math.floor(m.loot * 0.25);
-      result = "Clean sweep";
-    }
+    const crate = salvageCrate(m, margin);
+    const rec = masteryRec(m.id);
+    const bonus = masteryBonus(m);
+    let loot = Math.floor(m.loot * crate.lootMult * (1 + bonus.loot));
+    let xpGain = Math.max(1, Math.floor(m.xp * (1 + bonus.xp)));
+    rec.wins += 1;
+    if (crate.kind === "jackpot") rec.jackpots += 1;
+    const stars = starsFor(m);
     gainCreds(loot);
-    state.xp += m.xp;
+    state.xp += xpGain;
     applyLevelUps();
-    log(`${result} (margin ${margin}). Salvage +${loot} creds, +${m.xp} XP.`, cls);
+    const result = crate.kind === "scrape" ? "Scrape" : crate.kind === "jackpot" ? "Jackpot" : "Clean";
+    log(`${result} · ${crate.name} (margin ${margin}). +${loot} creds, +${xpGain} XP. Mastery ${starGlyphs(stars)}`, "win");
+    toast(`${crate.name} · ${starGlyphs(stars)}`, true);
   } else {
     const xpGain = Math.floor(m.xp / 2);
     state.xp += xpGain;
@@ -400,7 +473,7 @@ function sellScrap() {
 
 function tryUnlock() {
   if (state.meridianOpen) {
-    toast("Gate open. Roster still Ember → Ash → Corsair.");
+    toast("Gate open. Six lanes are already live.");
     return;
   }
   if (state.level < ECON.unlockLevel || state.creds < ECON.unlockCreds) {
@@ -530,10 +603,18 @@ function renderMissions() {
     const card = document.createElement("div");
     card.className = "mission " + m.id;
     const e = m.enemy;
-    const lane = { ember: "Lane 01", ash: "Lane 02", corsair: "Lane 03" }[m.id] || "Lane";
+    const stars = starsFor(m);
+    const bonus = masteryBonus(m);
+    const rec = masteryRec(m.id);
+    const bonusHint = stars
+      ? ` · +${Math.round(bonus.loot * 100)}% loot${bonus.xp ? ` / +${Math.round(bonus.xp * 100)}% XP` : ""}`
+      : rec.wins ? "" : " · first win = 1★";
     card.innerHTML = `
-      <div class="lane">${lane} · DN</div>
-      <h3>${m.name}</h3>
+      <div class="lane">${m.lane} · T${m.tier} · DN</div>
+      <div class="mission-title">
+        <h3>${m.name}</h3>
+        <span class="stars" aria-label="${stars} of 3 stars">${starGlyphs(stars)}</span>
+      </div>
       <p>${m.blurb}</p>
       <div class="chips">
         <span class="chip">Energy <strong>${m.energy}</strong></span>
@@ -541,6 +622,7 @@ function renderMissions() {
         <span class="chip">XP <strong>${m.xp}</strong></span>
         <span class="chip">Enemy Def <strong>${e.def}</strong></span>
       </div>
+      <div class="mastery-hint">Mastery ${starGlyphs(stars)} · ${rec.wins} win${rec.wins === 1 ? "" : "s"}${bonusHint}</div>
     `;
     const btn = document.createElement("button");
     btn.textContent = `Engage · ${m.energy} energy`;
@@ -795,7 +877,7 @@ function renderStations() {
   const gate = document.createElement("div");
   gate.className = "gate";
   gate.innerHTML = `
-    <p>Open <strong style="color:var(--text)">Glass Meridian</strong> — free grind gate. No IAP. Roster not expanded yet.</p>
+    <p>Open <strong style="color:var(--text)">Glass Meridian</strong> — free grind gate. No IAP. The six-lane roster is already live.</p>
     <div class="req">
       <span class="chip">Need <strong>${ECON.unlockCreds.toLocaleString()}</strong> creds</span>
       <span class="chip">Need Lv <strong>${ECON.unlockLevel}</strong></span>
@@ -804,7 +886,7 @@ function renderStations() {
   `;
   const unlock = document.createElement("button");
   unlock.className = "cyan block";
-  unlock.textContent = state.meridianOpen ? "Gate open · roster frozen" : locked ? `Unlock · locked (Lv ${ECON.unlockLevel})` : "Unlock Glass Meridian";
+  unlock.textContent = state.meridianOpen ? "Gate open" : locked ? `Unlock · locked (Lv ${ECON.unlockLevel})` : "Unlock Glass Meridian";
   unlock.disabled = locked && !state.meridianOpen;
   unlock.onclick = tryUnlock;
   gate.appendChild(unlock);
@@ -857,6 +939,6 @@ setInterval(() => {
   render();
 }, 1000);
 
-log("Dark Nova: Omniverse V0. Ember Drift → Ash Belt (Def 9) → Corsair Gate.", "info");
+log("Dark Nova: Omniverse V0. Six lanes. Mastery ★★★. Salvage crates named.", "info");
 log("Cinder Claim + miner 24/cycle into a claim pile. Tap Claim to bank. Relay Alpha free. No Refit in PvE.", "info");
 render();
