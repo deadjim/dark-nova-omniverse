@@ -414,9 +414,8 @@ function pileHeat(amount, cap) {
   if (!amount) return "empty";
   const pct = amount / cap;
   if (pct >= 1) return "full";
-  if (pct >= 0.7) return "hot";
-  if (pct >= 0.3) return "mid";
-  return "low";
+  if (pct >= 0.8) return "pull";
+  return "quiet";
 }
 
 function credChip({ amount, cap, label, onClaim }) {
@@ -792,13 +791,23 @@ function renderMissions() {
     card.appendChild(btn);
     const under = document.createElement("div");
     under.className = "mastery-under";
-    const starEl = document.createElement("span");
-    starEl.className = "stars";
-    starEl.setAttribute("aria-label", `Mastery ${stars}`);
-    starEl.textContent = stars;
-    under.appendChild(starEl);
+    under.setAttribute("aria-label", `Mastery ${stars}`);
+    const row = document.createElement("div");
+    row.className = "star-row";
+    [
+      { on: slots.s1, n: 1, tip: "first clear" },
+      { on: slots.s2, n: 2, tip: "clean sweep" },
+      { on: slots.s3, n: 3, tip: "3 clears" },
+    ].forEach((slot) => {
+      const mark = document.createElement("span");
+      mark.className = "star-slot" + (slot.on ? " on" : "");
+      mark.innerHTML = `<span class="star">${slot.on ? "★" : "☆"}</span><span class="star-n">★${slot.n}</span>`;
+      mark.title = `★${slot.n} ${slot.tip}`;
+      row.appendChild(mark);
+    });
+    under.appendChild(row);
     const chip = document.createElement("span");
-    chip.className = "mastery-chip";
+    chip.className = "mastery-chip" + (bonus ? " bonus" : "");
     if (bonus) chip.textContent = `+${Math.round(bonus * 100)}% loot`;
     else if (!slots.s1) chip.textContent = "★1 first clear";
     else if (!slots.s2) chip.textContent = "★2 needs clean";

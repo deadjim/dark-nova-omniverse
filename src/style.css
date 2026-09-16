@@ -193,22 +193,58 @@ button.block { width: 100%; margin-top: 4px; }
 }
 .mastery-under {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 8px 10px;
+  margin-top: 10px;
 }
-.mastery-under .stars {
-  color: var(--ash);
-  letter-spacing: 0.08em;
-  font-size: 0.9rem;
+.star-row {
+  display: flex;
+  gap: 6px;
 }
+.star-slot {
+  min-width: 36px;
+  min-height: 28px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: rgba(0,0,0,.28);
+  border: 1px solid var(--line);
+}
+.star-slot .star {
+  font-size: 14px;
+  line-height: 1;
+  color: #5a6478;
+}
+.star-slot .star-n {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.star-slot.on {
+  border-color: rgba(255, 179, 71, 0.55);
+  background: rgba(255, 179, 71, 0.12);
+}
+.star-slot.on .star { color: var(--ash); }
+.star-slot.on .star-n { color: var(--ash); }
 .mastery-chip {
-  font-size: 0.68rem;
-  font-weight: 650;
-  color: #081018;
-  background: linear-gradient(180deg, var(--ash), var(--ember));
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 5px 10px;
+}
+.mastery-chip.bonus {
+  color: #081018;
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--ash), var(--ember));
 }
 .salvage-flash {
   position: fixed;
@@ -393,26 +429,32 @@ button.block { width: 100%; margin-top: 4px; }
   border-color: var(--line);
   box-shadow: none;
 }
-.cred-chip.heat-low {
-  box-shadow: 0 0 10px rgba(61, 224, 255, 0.18);
+.cred-chip.heat-quiet {
+  color: var(--cyan);
+  border-color: rgba(61, 224, 255, 0.28);
+  box-shadow: none;
 }
-.cred-chip.heat-mid {
-  box-shadow: 0 0 16px rgba(61, 224, 255, 0.4);
-}
-.cred-chip.heat-hot {
-  color: var(--ash);
-  border-color: rgba(255, 179, 71, 0.65);
-  box-shadow: 0 0 18px rgba(255, 179, 71, 0.45);
+.cred-chip.heat-pull,
+.cred-chip.heat-full { overflow: visible; }
+.cred-chip.heat-pull {
+  color: var(--ember);
+  border-color: rgba(255, 107, 44, 0.75);
+  box-shadow: 0 0 16px rgba(255, 107, 44, 0.4);
+  animation: chip-pull 1.3s ease-in-out infinite;
 }
 .cred-chip.heat-full {
   color: var(--ember);
-  border-color: rgba(255, 107, 44, 0.8);
-  box-shadow: 0 0 22px rgba(255, 107, 44, 0.65);
-  animation: chip-glow 1.1s ease-in-out infinite;
+  border-color: rgba(255, 107, 44, 0.95);
+  box-shadow: 0 0 22px rgba(255, 107, 44, 0.7);
+  animation: chip-glow 0.85s ease-in-out infinite;
+}
+@keyframes chip-pull {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(255, 107, 44, 0.35); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 107, 44, 0.55); }
 }
 @keyframes chip-glow {
-  0%, 100% { box-shadow: 0 0 14px rgba(255, 107, 44, 0.45); }
-  50% { box-shadow: 0 0 28px rgba(255, 107, 44, 0.9); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(255, 107, 44, 0.5); }
+  50% { transform: scale(1.045); box-shadow: 0 0 28px rgba(255, 107, 44, 0.95); }
 }
 .miners-box .cred-chip { margin-top: 10px; width: 100%; }
 
