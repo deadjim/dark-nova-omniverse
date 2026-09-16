@@ -14,111 +14,60 @@
         <div class="dn-mark" aria-hidden="true">DN</div>
         <div>
           <h1>Dark Nova: Omniverse</h1>
-          <div class="tag">DN · mission lanes · V0</div>
+          <div class="tag">DN · Loop 2 · V0</div>
         </div>
       </div>
-      <div class="tag" id="tickLabel">regen 60s</div>
+      <div class="hud" aria-live="polite">
+        <div><span class="cred">creds</span> <strong id="creds">0</strong></div>
+        <div><span class="energy">energy</span> <strong id="energy">100</strong>/<span id="energyCap">100</span></div>
+        <div>Lv <strong id="level">1</strong> · <span id="tickLabel">regen 60s</span></div>
+      </div>
     </header>
 
-    <section class="panel">
-      <div class="stats">
-        <div class="stat">
-          <div class="k">Energy</div>
-          <div class="v"><span id="energy">100</span>/<span id="energyCap">100</span></div>
-          <div class="bar energy-bar"><span id="energyFill"></span></div>
-        </div>
-        <div class="stat">
-          <div class="k">Creds</div>
-          <div class="v" id="creds">0</div>
-        </div>
-        <div class="stat">
-          <div class="k">Level</div>
-          <div class="v" id="level">1</div>
-        </div>
-        <div class="stat">
-          <div class="k">XP</div>
-          <div class="v"><span id="xp">1</span> / <span id="xpNext">10</span></div>
-          <div class="bar"><span id="xpFill"></span></div>
-        </div>
-      </div>
-      <div class="hint" id="regenHint">+10 energy every 60s · V0 playtest grant 6,000 creds</div>
-    </section>
+    <nav class="tabs" role="tablist" aria-label="DN sections">
+      <button type="button" class="tab" role="tab" id="tab-missions" aria-selected="false" aria-controls="panel-missions" data-tab="missions">Missions</button>
+      <button type="button" class="tab" role="tab" id="tab-systems" aria-selected="true" aria-controls="panel-systems" data-tab="systems">Systems</button>
+      <button type="button" class="tab" role="tab" id="tab-stations" aria-selected="false" aria-controls="panel-stations" data-tab="stations">Stations</button>
+    </nav>
 
-    <section class="panel">
-      <div class="row" style="margin-bottom:8px">
-        <strong>Ship skills</strong>
-        <span class="tag" id="pointsLabel">0 pts</span>
-      </div>
-      <div id="skills"></div>
-    </section>
-
-    <section class="panel">
-      <div class="row" style="margin-bottom:10px">
-        <strong>Missions</strong>
-        <span class="tag">dump Atk to climb free</span>
+    <section id="panel-missions" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-missions">
+      <div class="panel cyan">
+        <div class="row" style="margin-bottom:8px">
+          <strong>Ship skills</strong>
+          <span class="tag" id="pointsLabel">0 pts</span>
+        </div>
+        <div id="skills"></div>
+        <p class="hint">+10 energy every 60s. Loss stays in the combat log — no Refit.</p>
       </div>
       <div id="missions"></div>
-    </section>
-
-    <section class="panel">
-      <div class="row" style="margin-bottom:10px">
-        <strong>DN belt · Planets</strong>
-        <span class="tag">V0 playtest · L1 2,500 (sheet 100k)</span>
-      </div>
-      <p class="hint" style="margin-top:0">Buy worlds with creds. Each level holds more factories. No IAP.</p>
-      <div id="planets"></div>
-      <div class="actions" style="margin-top:8px">
-        <button class="secondary" id="buyPlanet">Claim L1 world</button>
+      <div class="panel">
+        <strong>Combat log</strong>
+        <div class="log" id="log"></div>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="row" style="margin-bottom:10px">
-        <strong>Factories</strong>
-        <span class="tag">service or lose yield</span>
-      </div>
-      <div id="factories"></div>
+    <section id="panel-systems" class="tab-panel" role="tabpanel" aria-labelledby="tab-systems">
+      <div id="systemsRoot"></div>
     </section>
 
-    <section class="panel">
-      <div class="row" style="margin-bottom:10px">
-        <strong>Miners</strong>
-        <span class="tag">mine or replicate</span>
-      </div>
-      <div id="miners"></div>
-      <div class="actions" style="margin-top:8px">
-        <button class="secondary" id="buyMiner">Buy robotic miner</button>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="row" style="margin-bottom:10px">
-        <strong>Space stations</strong>
-        <span class="tag">own · produce · dock</span>
-      </div>
-      <div id="stations"></div>
-      <div class="actions" style="margin-top:8px">
-        <button class="secondary" id="buyStation">Buy DN dock</button>
-      </div>
-    </section>
-
-    <section class="panel">
-      <strong>Combat log</strong>
-      <div class="log" id="log"></div>
+    <section id="panel-stations" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-stations">
+      <div id="stationsRoot"></div>
     </section>
   </div>
 
-  <div class="overlay" id="defeatOverlay">
+  <div class="overlay" id="replicateOverlay">
     <div class="card">
-      <span class="dn-chip">Dark Nova · PvE</span>
-      <h2>Defeat</h2>
-      <p id="defeatCopy">Hull’s scrap. Regen energy and replot the lanes.</p>
+      <span class="dn-chip">Dark Nova · Miners</span>
+      <h2>Confirm replicate</h2>
+      <p id="replicateCopy">Grow the fleet over 3 cycles? Mine pauses. No cred cost. Won’t start if the wallet is below one mine tick.</p>
       <div class="actions">
-        <button class="secondary" id="defeatDismiss">Regen and replot</button>
+        <button type="button" class="cyan" id="confirmReplicate">Replicate</button>
+        <button type="button" class="secondary" id="cancelReplicate">Keep mining</button>
       </div>
     </div>
   </div>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
