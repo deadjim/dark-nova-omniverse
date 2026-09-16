@@ -87,6 +87,8 @@ const ECON = {
   idleCycles: 225, // ~45 min at 12s — pile caps; no infinite balloon
 };
 
+const MAX_CATCHUP = ECON.idleCycles * CYCLE; // ~45 min — piles cap here; no infinite years
+
 const state = {
   energy: 100,
   energyCap: 100,
@@ -103,6 +105,7 @@ const state = {
   minerCap: 1,
   outpost: false,
   meridianOpen: false,
+  lastTick: Date.now(),
   mastery: {},
   miners: [{ id: 1, dock: "cinder" }],
   modes: { cinder: "mine", ember: "mine", relay: "mine", "ash-l0": "mine" },
@@ -140,6 +143,7 @@ const state = {
 
 function saveState() {
   try {
+    state.lastTick = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch (_) {
     /* quota / private mode — run continues unsaved */
@@ -208,9 +212,101 @@ function loadState() {
       state.pileFull = { ...state.pileFull, ...saved.pileFull };
     }
     mergeSystems(saved.systems);
+    catchUp(typeof saved.lastTick === "number" ? saved.lastTick : 0);
     return true;
   } catch (_) {
     return false;
+  }
+}
+
+function applyCyclePiles(opts = {}) {
+  const quiet = !!opts.quiet;
+  let stacked = 0;
+  for (const dock of Object.keys(state.modes)) {
+    if (state.modes[dock] === "mine") {
+      const gain = mineIncome(dock);
+      if (gain) {
+        const was = state.minePile[dock] || 0;
+        const full = addPile(state.minePile, dock, gain, mineCap(dock));
+        stacked += (state.minePile[dock] || 0) - was;
+        if (full && !state.pileFull[dock]) {
+          state.pileFull[dock] = true;
+          if (!quiet) log(`Mine pile at ${dock} is full (~45 min idle). Claim to keep stacking.`, "info");
+        }
+      }
+    } else if (minersAt(dock).length) {
+      state.replicateLeft[dock] -= 1;
+      if (state.replicateLeft[dock] <= 0) {
+        if (state.miners.length < state.minerCap) {
+          state.miners.push({ id: state.nextMiner++, dock });
+          if (!quiet) log(`Replica complete at ${dock}. Fleet +1.`, "info");
+        } else if (!quiet) {
+          log(`Replica finished but berth is full.`, "lose");
+        }
+        state.modes[dock] = "mine";
+        state.replicateLeft[dock] = 0;
+      }
+    }
+  }
+  for (const sys of state.systems) {
+    if (!sys.owned) continue;
+    for (const f of sys.factories) {
+      if (f.lockedOnline) {
+        f.status = "online";
+        f.idle = 0;
+        stacked += stackFactory(f);
+        continue;
+      }
+      if (f.status === "online") stacked += stackFactory(f);
+    }
+  }
+  return stacked;
+}
+
+function catchUp(lastTick) {
+  const now = Date.now();
+  if (!lastTick || lastTick > now) {
+    state.lastTick = now;
+    return;
+  }
+  let elapsed = Math.floor((now - lastTick) / 1000);
+  if (elapsed < 2) {
+    state.lastTick = now;
+    return;
+  }
+  elapsed = Math.min(elapsed, MAX_CATCHUP);
+
+  const energyBefore = state.energy;
+  let energySec = elapsed;
+  while (energySec >= state.regenLeft && state.energy < state.energyCap) {
+    energySec -= state.regenLeft;
+    state.regenLeft = 60;
+    state.energy = Math.min(state.energyCap, state.energy + 10);
+  }
+  if (state.energy >= state.energyCap) state.regenLeft = 60;
+  else state.regenLeft = Math.max(1, state.regenLeft - energySec);
+
+  let cycles = 0;
+  let cycleSec = elapsed;
+  if (cycleSec >= state.cycleLeft) {
+    cycleSec -= state.cycleLeft;
+    cycles += 1 + Math.floor(cycleSec / CYCLE);
+    state.cycleLeft = CYCLE - (cycleSec % CYCLE);
+    if (state.cycleLeft <= 0) state.cycleLeft = CYCLE;
+  } else {
+    state.cycleLeft -= cycleSec;
+  }
+
+  let stacked = 0;
+  for (let i = 0; i < cycles; i++) stacked += applyCyclePiles({ quiet: true });
+
+  state.lastTick = now;
+  if (cycles || state.energy !== energyBefore) {
+    const mins = Math.max(1, Math.round(elapsed / 60));
+    log(
+      `Offline catch-up · ${mins}m · ${cycles} cycle${cycles === 1 ? "" : "s"} stacked +${stacked} unclaimed. Energy ${state.energy}/${state.energyCap}. Tap Claim to bank.`,
+      "info"
+    );
   }
 }
 
@@ -621,55 +717,20 @@ function stackFactory(factory) {
 }
 
 function tickEconomy() {
-  let stacked = 0;
+  const stacked = applyCyclePiles();
   let bleed = 0;
-
-  for (const dock of Object.keys(state.modes)) {
-    if (state.modes[dock] === "mine") {
-      const gain = mineIncome(dock);
-      if (gain) {
-        const was = state.minePile[dock] || 0;
-        const full = addPile(state.minePile, dock, gain, mineCap(dock));
-        stacked += (state.minePile[dock] || 0) - was;
-        if (full && !state.pileFull[dock]) {
-          state.pileFull[dock] = true;
-          log(`Mine pile at ${dock} is full (~45 min idle). Claim to keep stacking.`, "info");
-        }
-      }
-    } else if (minersAt(dock).length) {
-      state.replicateLeft[dock] -= 1;
-      if (state.replicateLeft[dock] <= 0) {
-        if (state.miners.length < state.minerCap) {
-          state.miners.push({ id: state.nextMiner++, dock });
-          log(`Replica complete at ${dock}. Fleet +1.`, "info");
-        } else {
-          log(`Replica finished but berth is full.`, "lose");
-        }
-        state.modes[dock] = "mine";
-        state.replicateLeft[dock] = 0;
-      }
-    }
-  }
-
   for (const sys of state.systems) {
     if (!sys.owned) continue;
     const cap = bleedCap(sys);
     for (const f of sys.factories) {
-      if (f.lockedOnline) {
-        f.status = "online";
-        f.idle = 0;
-        stacked += stackFactory(f);
-        continue;
-      }
+      if (f.lockedOnline) continue;
       if (f.status === "online") {
-        stacked += stackFactory(f);
         f.idle += 1;
         if (f.idle >= ECON.neglectAfter) f.status = "neglected";
       }
       if (f.status === "neglected") bleed += cap;
     }
   }
-
   if (bleed) state.creds = Math.max(0, state.creds - bleed);
   if (stacked) log(`Cycle stacked +${stacked} unclaimed. Tap Claim to bank.`, "info");
   if (bleed) log(`Neglect bleed −${bleed} creds (≤ mine−1).`, "lose");

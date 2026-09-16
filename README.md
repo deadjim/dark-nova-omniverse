@@ -11,7 +11,7 @@ GitHub Pages from `main` → `/docs`.
 ### Access caveats
 
 - Do **not** use Surge (`dark-nova-omniverse.surge.sh` — HTTP 451).
-- Progress saves in this browser (`localStorage`). Hard refresh keeps the run.
+- Progress saves in this browser (`localStorage`). Hard refresh keeps the run. Closed-tab time fills claim piles and energy (capped ~45 min). Piles still need tap-to-claim.
 - PvE has **no Revenge / Refit**. Loss is combat-log only.
 
 ## Run locally
