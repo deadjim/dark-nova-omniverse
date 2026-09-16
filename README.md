@@ -42,12 +42,14 @@ Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend**. Ember 
 | Starter | L1, **180** creds (thin wallet). |
 | Station | **DN Relay Alpha is free at L1**. |
 | Asteroid | **Cinder Claim** so mining works before a planet. |
-| Miner | **+24 creds/cycle** while Mining. |
+| Miner | **+24/cycle** into a **claim pile**. Clock is real (~12s). **No auto-credit.** |
+| Factory | **+8/cycle** into its own pile while Online. Same tap-to-claim. |
+| Pile cap | ~**45 min** idle (225 cycles). Full piles stop stacking until Claim. |
 | Replicate | **3 mine cycles, never creds.** No 120-cred cost. No wallet-floor confirm. |
 | Service | **8 energy**. Regen +10/60s always covers one factory. |
 | Bleed | **≤ mine−1** (e.g. −23 vs +24). No death spiral. |
 | Soft-lock | **Rock Line / Forge Alpha stay Online**. |
-| First planet | **Ember Reach = 100,000** (not discounted). Progress meter on Systems. |
+| First planet | **Ember Reach = 100,000** (not discounted). Bar = **lifetime earned** — scrap spends never shrink it. |
 | Mid unlocks | **2,500 earned** → second miner berth. **12,000 earned** → Ash Drift L0 outpost. |
 
-How to try it: open Systems, watch the 100k meter, Ignore Slag Line Beta to see capped bleed, Service for 8⚡, toggle Replicate (confirm), visit Stations for the free relay + scrap + Glass Meridian gate (roster still frozen).
+How to try it: open Systems, wait a 12s cycle, tap **Claim** on the mine/factory pile (wallet does not tick up on its own), buy scrap and watch the 100k bar hold, Ignore Slag Line Beta for capped bleed, Service for 8⚡, toggle Replicate (3 cycles, no creds), visit Stations for the free relay + scrap + Glass Meridian gate (roster still frozen).

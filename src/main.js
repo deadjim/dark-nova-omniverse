@@ -43,6 +43,8 @@ const ECON = {
   unlockLevel: 10,
   berthAt: 2500,
   outpostAt: 12000,
+  factoryRate: 8,
+  idleCycles: 225, // ~45 min at 12s — pile caps; no infinite balloon
 };
 
 const state = {
@@ -64,6 +66,8 @@ const state = {
   miners: [{ id: 1, dock: "cinder" }],
   modes: { cinder: "mine", ember: "mine", relay: "mine", "ash-l0": "mine" },
   replicateLeft: { cinder: 0, ember: 0, relay: 0, "ash-l0": 0 },
+  minePile: { cinder: 0, ember: 0, relay: 0, "ash-l0": 0 },
+  pileFull: { cinder: false, ember: false, relay: false, "ash-l0": false },
   systems: [
     {
       id: "cinder",
@@ -73,8 +77,8 @@ const state = {
       owned: true,
       kind: "asteroid",
       factories: [
-        { id: "rock-line", name: "Rock Line", status: "online", idle: 0, lockedOnline: true },
-        { id: "slag-beta", name: "Slag Line Beta", status: "online", idle: 0, lockedOnline: false },
+        { id: "rock-line", name: "Rock Line", status: "online", idle: 0, lockedOnline: true, pile: 0 },
+        { id: "slag-beta", name: "Slag Line Beta", status: "online", idle: 0, lockedOnline: false, pile: 0 },
       ],
     },
     {
@@ -86,8 +90,8 @@ const state = {
       kind: "planet",
       cost: 100000,
       factories: [
-        { id: "forge-alpha", name: "Forge Alpha", status: "online", idle: 0, lockedOnline: true },
-        { id: "slag-reach", name: "Slag Line Beta", status: "online", idle: 0, lockedOnline: false },
+        { id: "forge-alpha", name: "Forge Alpha", status: "online", idle: 0, lockedOnline: true, pile: 0 },
+        { id: "slag-reach", name: "Slag Line Beta", status: "online", idle: 0, lockedOnline: false, pile: 0 },
       ],
     },
   ],
@@ -121,6 +125,51 @@ function bleedCap(sys) {
   const mine = mineIncome(sys.id);
   if (mine <= 0) return 0;
   return Math.max(0, mine - 1);
+}
+
+function mineCap(dock) {
+  const n = Math.max(1, minersAt(dock).length);
+  return n * ECON.minePerMiner * ECON.idleCycles;
+}
+
+function factoryCap() {
+  return ECON.factoryRate * ECON.idleCycles;
+}
+
+function addPile(map, key, amount, cap) {
+  const next = Math.min(cap, (map[key] || 0) + amount);
+  const full = next >= cap && amount > 0;
+  map[key] = next;
+  return full;
+}
+
+function claimMine(dock) {
+  const n = state.minePile[dock] || 0;
+  if (!n) {
+    toast("Nothing to claim yet — wait for a mine cycle.");
+    return;
+  }
+  state.minePile[dock] = 0;
+  state.pileFull[dock] = false;
+  gainCreds(n);
+  log(`Claimed ${n} mine creds.`, "win");
+  toast(`Banked ${n} creds.`, true);
+  maybeUnlockMids();
+  render();
+}
+
+function claimFactory(factory) {
+  const n = factory.pile || 0;
+  if (!n) {
+    toast("Factory pile is empty.");
+    return;
+  }
+  factory.pile = 0;
+  gainCreds(n);
+  log(`Claimed ${n} factory creds from ${factory.name}.`, "win");
+  toast(`Banked ${n} creds.`, true);
+  maybeUnlockMids();
+  render();
 }
 
 function xpForLevel(level) {
@@ -328,7 +377,7 @@ function maybeUnlockMids() {
       owned: true,
       kind: "outpost",
       factories: [
-        { id: "ring-yard", name: "Ring Yard One", status: "online", idle: 0, lockedOnline: true },
+        { id: "ring-yard", name: "Ring Yard One", status: "online", idle: 0, lockedOnline: true, pile: 0 },
       ],
     });
     log("Mid unlock: Ash Drift L0 outpost claimed.", "win");
@@ -336,13 +385,30 @@ function maybeUnlockMids() {
   }
 }
 
+function stackFactory(factory) {
+  if (factory.pile == null) factory.pile = 0;
+  const cap = factoryCap();
+  const before = factory.pile;
+  factory.pile = Math.min(cap, before + ECON.factoryRate);
+  return factory.pile - before;
+}
+
 function tickEconomy() {
-  let mineGain = 0;
+  let stacked = 0;
   let bleed = 0;
 
   for (const dock of Object.keys(state.modes)) {
     if (state.modes[dock] === "mine") {
-      mineGain += mineIncome(dock);
+      const gain = mineIncome(dock);
+      if (gain) {
+        const was = state.minePile[dock] || 0;
+        const full = addPile(state.minePile, dock, gain, mineCap(dock));
+        stacked += (state.minePile[dock] || 0) - was;
+        if (full && !state.pileFull[dock]) {
+          state.pileFull[dock] = true;
+          log(`Mine pile at ${dock} is full (~45 min idle). Claim to keep stacking.`, "info");
+        }
+      }
     } else if (minersAt(dock).length) {
       state.replicateLeft[dock] -= 1;
       if (state.replicateLeft[dock] <= 0) {
@@ -365,9 +431,11 @@ function tickEconomy() {
       if (f.lockedOnline) {
         f.status = "online";
         f.idle = 0;
+        stacked += stackFactory(f);
         continue;
       }
       if (f.status === "online") {
+        stacked += stackFactory(f);
         f.idle += 1;
         if (f.idle >= ECON.neglectAfter) f.status = "neglected";
       }
@@ -375,11 +443,9 @@ function tickEconomy() {
     }
   }
 
-  gainCreds(mineGain);
   if (bleed) state.creds = Math.max(0, state.creds - bleed);
-  if (mineGain) log(`Mine cycle +${mineGain} creds.`, "win");
+  if (stacked) log(`Cycle stacked +${stacked} unclaimed. Tap Claim to bank.`, "info");
   if (bleed) log(`Neglect bleed −${bleed} creds (≤ mine−1).`, "lose");
-  maybeUnlockMids();
 }
 
 function renderSkills() {
@@ -440,6 +506,9 @@ function minerBox(dock, label) {
   const mining = mode === "mine";
   const gain = count * ECON.minePerMiner;
   const left = state.replicateLeft[dock];
+  const pile = state.minePile[dock] || 0;
+  const cap = mineCap(dock);
+  const full = pile >= cap;
   const wrap = document.createElement("div");
   wrap.className = "miners-box";
   wrap.innerHTML = `
@@ -452,18 +521,26 @@ function minerBox(dock, label) {
     </div>
     <div class="mode-stat">
       ${mining
-        ? `<span class="gain">+${gain} creds/cycle</span> · ${count ? `${ECON.minePerMiner} each` : "no hulls docked"}`
+        ? `<span class="gain">+${gain}/cycle into pile</span> · ${count ? `${ECON.minePerMiner} each · clock ${CYCLE}s` : "no hulls docked"}`
         : `<span class="cost">${ECON.replicateCycles} cycles · no creds</span> · grow +1 · mine paused${count ? ` · ${left} left` : ""}`}
+    </div>
+    <div class="pile-row${full ? " full" : ""}">
+      <div>
+        <div class="pile-k">Unclaimed mine pile</div>
+        <div class="pile-v">${pile.toLocaleString()} / ${cap.toLocaleString()}${full ? " · full" : ""}</div>
+      </div>
+      <button type="button" class="claim" ${pile ? "" : "disabled"}>Claim</button>
     </div>
   `;
   wrap.querySelectorAll(".mode-chip").forEach((chip) => {
     chip.onclick = () => setMode(dock, chip.getAttribute("data-mode"));
   });
+  wrap.querySelector(".claim").onclick = () => claimMine(dock);
   return wrap;
 }
 
 function renderProgress(root) {
-  const planetPct = Math.min(100, (state.creds / ECON.planetL1) * 100);
+  const planetPct = Math.min(100, (state.earned / ECON.planetL1) * 100);
   const berthPct = Math.min(100, (state.earned / ECON.berthAt) * 100);
   const outPct = Math.min(100, (state.earned / ECON.outpostAt) * 100);
   const box = document.createElement("article");
@@ -472,11 +549,11 @@ function renderProgress(root) {
     <div class="panel-head">
       <div>
         <h2>Path to Ember Reach</h2>
-        <p class="flavor">First planet stays ${ECON.planetL1.toLocaleString()} creds. Mid unlocks keep the grind from going void.</p>
+        <p class="flavor">Bar is lifetime earned toward ${ECON.planetL1.toLocaleString()} — scrap spends never pull it back. Wallet still needs ${ECON.planetL1.toLocaleString()} on hand to claim the world.</p>
       </div>
     </div>
     <div class="meter">
-      <div class="row"><span>First world</span><strong>${state.creds.toLocaleString()} / ${ECON.planetL1.toLocaleString()}</strong></div>
+      <div class="row"><span>Lifetime earned</span><strong>${state.earned.toLocaleString()} / ${ECON.planetL1.toLocaleString()}</strong></div>
       <div class="bar"><span style="width:${planetPct}%"></span></div>
     </div>
   `;
@@ -530,15 +607,24 @@ function renderSystems() {
       const neglected = f.status === "neglected" && !f.lockedOnline;
       const row = document.createElement("div");
       row.className = "factory" + (neglected ? " neglected" : "");
+      const pile = f.pile || 0;
+      const fcap = factoryCap();
+      const piledFull = pile >= fcap;
       row.innerHTML = `
         <div class="factory-meta">
           <p class="factory-name">${f.name}</p>
           <span class="status ${neglected ? "neglected" : "online"}"><span class="dot"></span> ${neglected ? "Neglected" : "Online"}</span>
           ${neglected ? `<div class="bleed">Bleeding −${cap} creds/cycle · capped ≤ mine−1</div>` : f.lockedOnline ? `<div class="hint" style="margin:4px 0 0">Stays Online · free regen service path</div>` : ""}
+          <div class="pile-line${piledFull ? " full" : ""}">Unclaimed ${pile.toLocaleString()} / ${fcap.toLocaleString()}${piledFull ? " · full" : neglected ? "" : ` · +${ECON.factoryRate}/cycle`}</div>
         </div>
       `;
       const actions = document.createElement("div");
       actions.className = "factory-actions";
+      const claim = document.createElement("button");
+      claim.className = "claim";
+      claim.textContent = pile ? `Claim ${pile}` : "Claim";
+      claim.disabled = !pile;
+      claim.onclick = () => claimFactory(f);
       const svc = document.createElement("button");
       svc.textContent = `Service factory · ${ECON.serviceEnergy}⚡`;
       svc.disabled = f.lockedOnline || state.energy < ECON.serviceEnergy;
@@ -547,6 +633,7 @@ function renderSystems() {
       ign.className = "ghost";
       ign.textContent = "Ignore";
       ign.onclick = () => ignoreFactory(sys, f);
+      actions.appendChild(claim);
       actions.appendChild(svc);
       actions.appendChild(ign);
       row.appendChild(actions);
@@ -707,5 +794,5 @@ setInterval(() => {
 }, 1000);
 
 log("Dark Nova: Omniverse V0. Ember Drift → Ash Belt (Def 9) → Corsair Gate.", "info");
-log("Cinder Claim + miner 24/cycle. Relay Alpha free. No Refit in PvE.", "info");
+log("Cinder Claim + miner 24/cycle into a claim pile. Tap Claim to bank. Relay Alpha free. No Refit in PvE.", "info");
 render();

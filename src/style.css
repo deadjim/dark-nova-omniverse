@@ -163,6 +163,11 @@ button.secondary {
 }
 button.cyan { background: linear-gradient(180deg, #7af0ff, var(--cyan)); }
 button.block { width: 100%; margin-top: 4px; }
+button.claim {
+  background: linear-gradient(180deg, #7af0ff, var(--cyan));
+  color: #081018;
+  box-shadow: 0 0 12px rgba(61, 224, 255, 0.22);
+}
 
 .mission {
   border: 1px solid var(--line);
@@ -291,6 +296,25 @@ button.block { width: 100%; margin-top: 4px; }
 .mode-stat strong { color: var(--text); }
 .mode-stat .gain { color: var(--ok); }
 .mode-stat .cost { color: var(--ash); }
+.pile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(36,48,73,.7);
+}
+.pile-row.full .pile-v { color: var(--ash); }
+.pile-k {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.pile-v { font-size: 0.88rem; font-weight: 650; }
+.pile-line { font-size: 0.72rem; color: var(--cyan); margin-top: 4px; }
+.pile-line.full { color: var(--ash); }
 
 .stub-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .stub {
@@ -397,3 +421,16 @@ button.block { width: 100%; margin-top: 4px; }
 }
 .unlock.ready { border-color: rgba(61, 255, 154, 0.35); }
 .unlock.done { border-color: rgba(61, 224, 255, 0.35); }
+.unlock .bar {
+  height: 6px;
+  background: #0a0e18;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-top: 6px;
+}
+.unlock .bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--ok));
+}
