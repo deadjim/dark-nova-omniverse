@@ -61,7 +61,6 @@ const state = {
   minerCap: 1,
   outpost: false,
   meridianOpen: false,
-  pendingRep: null,
   miners: [{ id: 1, dock: "cinder" }],
   modes: { cinder: "mine", ember: "mine", relay: "mine", "ash-l0": "mine" },
   replicateLeft: { cinder: 0, ember: 0, relay: 0, "ash-l0": 0 },
@@ -116,14 +115,6 @@ function minersAt(dock) {
 function mineIncome(dock) {
   if (state.modes[dock] !== "mine") return 0;
   return minersAt(dock).length * ECON.minePerMiner;
-}
-
-function totalMineIfMining() {
-  let n = 0;
-  for (const m of state.miners) {
-    if (state.modes[m.dock] === "mine") n += ECON.minePerMiner;
-  }
-  return n || ECON.minePerMiner;
 }
 
 function bleedCap(sys) {
@@ -251,45 +242,6 @@ function buyPlanet(sys) {
   render();
 }
 
-function requestReplicate(dock) {
-  const floor = totalMineIfMining();
-  const atCap = state.miners.length >= state.minerCap;
-  state.pendingRep = { dock, floor, atCap };
-  const copy = document.getElementById("replicateCopy");
-  const go = document.getElementById("confirmReplicate");
-  if (atCap) {
-    copy.textContent = `Fleet berth full (${state.minerCap}). Unlock the second miner slot on the 100k path (${ECON.berthAt.toLocaleString()} earned).`;
-    go.disabled = true;
-  } else if (state.creds < floor) {
-    copy.textContent = `Wallet ${state.creds} is below one mine tick (${floor}). Replicate pauses mine — scrape Ember or wait a cycle. No discount on Ember.`;
-    go.disabled = true;
-  } else {
-    copy.textContent = `Replicate is ${ECON.replicateCycles} cycles, no cred cost (Founder). Mine pauses. You’ll keep ≥ ${floor} creds (one mine tick).`;
-    go.disabled = false;
-  }
-  document.getElementById("replicateOverlay").classList.add("show");
-}
-
-function confirmReplicate() {
-  const p = state.pendingRep;
-  document.getElementById("replicateOverlay").classList.remove("show");
-  if (!p || document.getElementById("confirmReplicate").disabled) {
-    state.pendingRep = null;
-    return;
-  }
-  if (state.miners.length >= state.minerCap || state.creds < p.floor) {
-    toast("Blocked — berth or wallet floor.");
-    state.pendingRep = null;
-    return;
-  }
-  state.modes[p.dock] = "replicate";
-  state.replicateLeft[p.dock] = ECON.replicateCycles;
-  state.pendingRep = null;
-  log(`Replicating at ${p.dock} · ${ECON.replicateCycles} cycles · mine paused · no creds.`, "info");
-  toast("Replicating — mine paused. 3 cycles, no cred cost.", true);
-  render();
-}
-
 function setMode(dock, mode) {
   if (mode === "mine") {
     state.modes[dock] = "mine";
@@ -298,7 +250,19 @@ function setMode(dock, mode) {
     render();
     return;
   }
-  requestReplicate(dock);
+  if (state.miners.length >= state.minerCap) {
+    toast(`Berth full (${state.minerCap}). Earn ${ECON.berthAt.toLocaleString()} for a second miner slot.`);
+    return;
+  }
+  if (!minersAt(dock).length) {
+    toast("No miner here to replicate.");
+    return;
+  }
+  state.modes[dock] = "replicate";
+  state.replicateLeft[dock] = ECON.replicateCycles;
+  log(`Replicating at ${dock} · ${ECON.replicateCycles} mine cycles · no creds.`, "info");
+  toast("Replicating — 3 mine cycles, never creds.", true);
+  render();
 }
 
 function dockMiner(from, to) {
@@ -724,12 +688,6 @@ document.querySelectorAll(".tab").forEach((tab) => {
     document.getElementById("panel-stations").classList.toggle("hidden", id !== "stations");
   });
 });
-
-document.getElementById("cancelReplicate").onclick = () => {
-  document.getElementById("replicateOverlay").classList.remove("show");
-  state.pendingRep = null;
-};
-document.getElementById("confirmReplicate").onclick = confirmReplicate;
 
 setInterval(() => {
   state.regenLeft -= 1;

@@ -43,7 +43,7 @@ Player **Atk + ⌊Spd/4⌋ + roll(0…Luck)** vs **static enemy Defend**. Ember 
 | Station | **DN Relay Alpha is free at L1**. |
 | Asteroid | **Cinder Claim** so mining works before a planet. |
 | Miner | **+24 creds/cycle** while Mining. |
-| Replicate | **3 cycles, no cred cost**. Confirm required. Blocked if wallet &lt; one mine tick. |
+| Replicate | **3 mine cycles, never creds.** No 120-cred cost. No wallet-floor confirm. |
 | Service | **8 energy**. Regen +10/60s always covers one factory. |
 | Bleed | **≤ mine−1** (e.g. −23 vs +24). No death spiral. |
 | Soft-lock | **Rock Line / Forge Alpha stay Online**. |
